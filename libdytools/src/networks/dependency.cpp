@@ -75,8 +75,8 @@ dynet::Expression DependencyParserTrainer::compute_loss(const dytools::ConllSent
 }
 float DependencyParserTrainer::evaluate(const std::vector<dytools::ConllSentence>& data)
 {
-    auto n_correct{0.f};
-    auto total{0.f};
+    auto n_correct = 0.f;
+    auto total = 0.f;
     for (auto const& sentence : data)
     {
         dynet::ComputationGraph cg;

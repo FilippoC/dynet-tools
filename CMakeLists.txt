@@ -1,10 +1,9 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.12)
 project(dynet-tools)
 
 set(CMAKE_CXX_STANDARD 11)
 
-include_directories("/Users/filippo/repos/dynet")
-include_directories("/usr/local/include")
+include_directories("/datastore/caio/repos/dynet")
 
 add_subdirectory(libdytools)
 

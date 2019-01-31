@@ -9,10 +9,11 @@ TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSetting
     dict(dict),
     builder(dim_input, dict->size(), local_pc, settings.output_bias)
 {
+    const int zero = 0;
     std::cerr
         << "Tagger\n"
         << " num classes: " << dict->size() << "\n"
-        << " classes: " << dict->convert((int) 0)
+        << " classes: " << dict->convert(zero)
         ;
     for (int i = 0 ; i < dict->size() ; ++i)
         std::cerr << "\t" << dict->convert(i);
