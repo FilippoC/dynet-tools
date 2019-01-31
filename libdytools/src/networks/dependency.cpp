@@ -45,7 +45,7 @@ std::pair<dynet::Expression, dynet::Expression> DependencyNetwork::full_logits(c
     const auto embs1 = first_bilstm(embs);
     const auto embs2 = second_bilstm(embs1);
 
-    const auto tag_weights = tagger(embs1);
+    const auto tag_weights = tagger.full_logits(dynet::concatenate_cols(embs1));
     const auto arc_weights = biaffine(embs2);
 
     return std::make_pair(tag_weights, arc_weights);
