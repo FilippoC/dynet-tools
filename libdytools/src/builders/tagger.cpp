@@ -16,8 +16,8 @@ TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSetting
     const int zero = 0;
     for (unsigned i = 0 ; i < settings.layers ; ++i)
     {
-        p_W.at(i) = local_pc.add_parameters({settings.dim, settings.dim});
-        p_bias.at(i) = local_pc.add_parameters({settings.dim, settings.dim}, dynet::ParameterInitConst(0.f));
+        p_W.at(i) = local_pc.add_parameters({settings.dim, dim_input});
+        p_bias.at(i) = local_pc.add_parameters({settings.dim}, dynet::ParameterInitConst(0.f));
     }
 
     std::cerr
@@ -47,7 +47,7 @@ dynet::Expression TaggerBuilder::full_logits(const dynet::Expression &input)
     for (unsigned i = 0 ; i < settings.layers ; ++i)
         repr = dynet::tanh(e_W.at(i) * repr + e_bias.at(i));
 
-    return builder.full_logits(input);
+    return builder.full_logits(repr);
 }
 
 dynet::Expression TaggerBuilder::neg_log_softmax(const dynet::Expression& input, unsigned idx)
