@@ -56,4 +56,20 @@ dynet::Expression TaggerBuilder::neg_log_softmax(const dynet::Expression& input,
     return dynet::pickneglogsoftmax(repr, idx);
 }
 
+dynet::Expression TaggerBuilder::neg_log_softmax(const dynet::Expression& input, const std::vector<std::string>& words)
+{
+    std::vector<unsigned> indices;
+    indices.reserve(words.size());
+    for (auto const& w : words)
+        indices.push_back(dict->convert(w));
+
+    return neg_log_softmax(input, indices);
+}
+
+dynet::Expression TaggerBuilder::neg_log_softmax(const dynet::Expression& input, const std::vector<unsigned>& indices)
+{
+    const auto repr = full_logits(input);
+    return dynet::pickneglogsoftmax(repr, indices);
+}
+
 }
