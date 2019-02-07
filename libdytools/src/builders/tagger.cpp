@@ -24,11 +24,15 @@ TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSetting
         << "Tagger\n"
         << " layer / dim: " << settings.layers << " / " << settings.dim << "\n"
         << " num classes: " << dict->size() << "\n"
-        << " classes: " << dict->convert(zero)
         ;
-    for (int i = 0 ; i < dict->size() ; ++i)
-        std::cerr << "\t" << dict->convert(i);
-    std::cerr << "\n\n";
+    
+    if (dict->size() < 50)
+    {
+        std::cerr << " classes: " << dict->convert(zero);
+        for (int i = 0; i < dict->size(); ++i)
+            std::cerr << "\t" << dict->convert(i);
+        std::cerr << "\n\n";
+    }
 }
 
 void TaggerBuilder::new_graph(dynet::ComputationGraph& cg, bool update)
