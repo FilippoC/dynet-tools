@@ -25,7 +25,7 @@ TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSetting
         << " layer / dim: " << settings.layers << " / " << settings.dim << "\n"
         << " num classes: " << dict->size() << "\n"
         ;
-    
+
     if (dict->size() < 50)
     {
         std::cerr << " classes: " << dict->convert(zero);
