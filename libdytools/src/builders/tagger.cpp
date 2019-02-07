@@ -119,9 +119,11 @@ dynet::Expression TaggerBuilder::masked_neg_log_softmax(const dynet::Expression&
     if (c != nullptr)
         *c = counter;
 
-    auto loss = neg_log_softmax(input, indices);
-    auto e_mask = dynet::input(*_cg, dynet::Dim({1}, words.size()), v_mask);
-    return loss * e_mask;
+    const auto loss = neg_log_softmax(input, indices);
+    const auto e_mask = dynet::input(*_cg, dynet::Dim({1}, v_mask.size()), v_mask);
+    const auto ret = loss * e_mask;
+
+    return ret;
 }
 
 }

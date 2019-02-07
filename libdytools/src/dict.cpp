@@ -35,9 +35,10 @@ unsigned Dict::size() const
     return id_to_word.size();
 }
 
-bool Dict::contains(const std::string& words) const
+bool Dict::contains(const std::string& _word) const
 {
-    return !(word_to_id.find(words) == word_to_id.end());
+    const auto word = normalize(_word);
+    return !(word_to_id.find(word) == word_to_id.end());
 }
 
 void Dict::freeze()
