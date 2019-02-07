@@ -47,6 +47,26 @@ void ConllSentence::update_heads(const std::vector<unsigned>& heads)
         (*this)[i].postag = heads[i];
 }
 
+// gold sentence, we have to compute the dependency tree as a sparse matrix
+dynet::Expression sentence_to_sparse_matrix(dynet::ComputationGraph &cg, const ConllSentence &sentence)
+{
+    const unsigned graph_width = sentence.size() + 1;
+
+    std::vector<unsigned> idx;
+    for (unsigned i = 0u; i < sentence.size(); ++i)
+    {
+        const unsigned mod = i + 1;
+        const unsigned head = (sentence.at(i).head == i ? 0u : sentence.at(i).head + 1);
+        idx.push_back(head + mod * graph_width);
+    }
+
+    std::vector<float> values(idx.size(), 1.f);
+    auto arcs = dynet::input(cg, {graph_width, graph_width}, idx, values);
+
+    return arcs;
+}
+
+
 float uas(const ConllSentence& sentence, const std::vector<unsigned>& heads, bool normalize)
 {
     float sum = 0.f;

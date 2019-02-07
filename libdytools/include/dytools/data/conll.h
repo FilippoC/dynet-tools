@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "dytools/dict.h"
+#include "dynet/expr.h"
 
 namespace dytools
 {
@@ -36,11 +37,29 @@ struct ConllToken
     );
 };
 
+struct ConllWordGetter
+{
+    inline const std::string& operator()(const ConllToken& token) const
+    {
+        return token.word;
+    }
+};
+
+struct POSTagGetter
+{
+    inline const std::string& operator()(const ConllToken& token) const
+    {
+        return token.postag;
+    }
+};
+
 struct ConllSentence : public std::vector<ConllToken>
 {
     void update_tags(const std::vector<unsigned>& tags);
     void update_heads(const std::vector<unsigned>& heads);
 };
+
+dynet::Expression sentence_to_sparse_matrix(dynet::ComputationGraph &cg, const ConllSentence &sentence);
 
 float uas(const ConllSentence& sentence, const std::vector<unsigned>& heads, bool normalize);
 
@@ -58,9 +77,7 @@ std::shared_ptr<dytools::Dict> build_conll_token_dict(It begin, It end)
         for (const ConllToken& token : sentence)
             dict->convert(token.word);
     }
-    dict->convert("<NUM/>");
     dict->freeze();
-    dict->set_unk("<UNK/>");
     return dict;
 }
 

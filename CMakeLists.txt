@@ -3,7 +3,7 @@ project(dynet-tools)
 
 set(CMAKE_CXX_STANDARD 11)
 
-include_directories("/datastore/caio/repos/dynet")
+include_directories("/Users/filippo/repos/dynet")
 
 add_subdirectory(libdytools)
 

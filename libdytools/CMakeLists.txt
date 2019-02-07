@@ -2,6 +2,8 @@ add_library(
         libdytools
 
         src/io.cpp
+        src/dict.cpp
+        src/utils.cpp
 
         src/algorithms/dependency-parser.cpp
         src/algorithms/tagger.cpp
@@ -10,13 +12,15 @@ add_library(
         src/builders/biaffine.cpp
         src/builders/bilstm.cpp
         src/builders/tagger.cpp
-        src/builders/token_embeddings.cpp
-        src/builders/char_embeddings.cpp
-        src/builders/embeddings.cpp
+        src/builders/embeddings/word.cpp
+        src/builders/embeddings/character.cpp
+        src/builders/embeddings/embeddings.cpp
+        src/builders/gcn.cpp
 
         src/data/conll.cpp
 
         src/networks/dependency.cpp
+        src/networks/base-dependency.cpp
 
         src/loss/dependency.cpp
 )
@@ -28,5 +32,5 @@ target_include_directories(
         PRIVATE src
 )
 
-FIND_PACKAGE(Boost COMPONENTS serialization filesystem REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS regex serialization filesystem REQUIRED)
 target_link_libraries(libdytools ${Boost_LIBRARIES})

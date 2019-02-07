@@ -1,52 +1,38 @@
 #pragma once
 
-#include "dytools/data/conll.h"
-#include "dytools/builders/embeddings.h"
-#include "dytools/builders/bilstm.h"
-#include "dytools/builders/biaffine.h"
-#include "dytools/builders/tagger.h"
+#include "dytools/builders/embeddings/embeddings.h"
 #include "dytools/training.h"
+#include "dytools/networks/base-dependency.h"
 
 namespace dytools
 {
 
-struct DependencySettings
+struct DependencySettings : BaseDependencySettings
 {
     EmbeddingsSettings embeddings;
-    BiLSTMSettings first_bilstm;
-    BiLSTMSettings second_bilstm;
-    TaggerSettings tagger;
-    BiAffineSettings biaffine;
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int)
     {
+        ar & boost::serialization::base_object<BaseDependencySettings>(*this);
         ar & embeddings;
-        ar & first_bilstm;
-        ar & second_bilstm;
-        ar & tagger;
-        ar & biaffine;
     }
 };
 
-struct DependencyNetwork : public Builder
+struct DependencyNetwork : public BaseDependencyNetwork
 {
     const DependencySettings settings;
-    dynet::ParameterCollection local_pc;
 
     EmbeddingsBuilder embeddings;
-    BiLSTMBuilder first_bilstm;
-    BiLSTMBuilder second_bilstm;
-    TaggerBuilder tagger;
-    BiAffineBuilder biaffine;
 
     dynet::ComputationGraph* _cg;
 
-    DependencyNetwork(dynet::ParameterCollection& pc, const DependencySettings& settings, std::shared_ptr<dynet::Dict> token_dict, std::shared_ptr<dynet::Dict> char_dict, std::shared_ptr<dynet::Dict> tagger_dict);
+    DependencyNetwork(dynet::ParameterCollection& pc, const DependencySettings& settings, std::shared_ptr<dytools::Dict> token_dict, std::shared_ptr<dytools::Dict> char_dict, std::shared_ptr<dytools::Dict> tagger_dict);
     void new_graph(dynet::ComputationGraph& cg, bool update = true);
     void set_is_training(bool value) override;
 
-    std::pair<dynet::Expression, dynet::Expression> full_logits(const ConllSentence& sentence);
+    unsigned get_embeddings_size() const override;
+    std::vector<dynet::Expression> get_embeddings(const ConllSentence &sentence) override;
 };
 
 

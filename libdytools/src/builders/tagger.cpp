@@ -5,7 +5,7 @@
 namespace dytools
 {
 
-TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSettings& settings, std::shared_ptr<dynet::Dict> dict, unsigned dim_input) :
+TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSettings& settings, std::shared_ptr<dytools::Dict> dict, unsigned dim_input) :
     settings(settings),
     local_pc(pc.add_subcollection("tagger")),
     dict(dict),
@@ -33,11 +33,20 @@ TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSetting
 
 void TaggerBuilder::new_graph(dynet::ComputationGraph& cg, bool update)
 {
+    _cg = &cg;
     builder.new_graph(cg, update);
     for (unsigned i = 0 ; i < settings.layers ; ++i)
     {
-        e_W.at(i) = dynet::parameter(cg, p_W.at(i));
-        e_bias.at(i) = dynet::parameter(cg, p_bias.at(i));
+        if (update)
+        {
+            e_W.at(i) = dynet::parameter(cg, p_W.at(i));
+            e_bias.at(i) = dynet::parameter(cg, p_bias.at(i));
+        }
+        else
+        {
+            e_W.at(i) = dynet::const_parameter(cg, p_W.at(i));
+            e_bias.at(i) = dynet::const_parameter(cg, p_bias.at(i));
+        }
     }
 }
 
@@ -56,6 +65,8 @@ dynet::Expression TaggerBuilder::neg_log_softmax(const dynet::Expression& input,
     return dynet::pickneglogsoftmax(repr, idx);
 }
 
+
+
 dynet::Expression TaggerBuilder::neg_log_softmax(const dynet::Expression& input, const std::vector<std::string>& words)
 {
     std::vector<unsigned> indices;
@@ -70,6 +81,43 @@ dynet::Expression TaggerBuilder::neg_log_softmax(const dynet::Expression& input,
 {
     const auto repr = full_logits(input);
     return dynet::pickneglogsoftmax(repr, indices);
+}
+
+dynet::Expression TaggerBuilder::masked_neg_log_softmax(const dynet::Expression& input, const std::vector<std::string>& words, unsigned* c, bool skip_first)
+{
+    std::vector<unsigned> indices;
+    std::vector<float> v_mask;
+
+    indices.reserve(words.size() + 1);
+    v_mask.reserve(words.size() + 1);
+
+    if (skip_first)
+    {
+        indices.push_back(0);
+        v_mask.push_back(0.f);
+    }
+
+    unsigned counter = 0u;
+    for (auto const& w : words)
+    {
+        if (dict->contains(w))
+        {
+            indices.push_back(dict->convert(w));
+            v_mask.push_back(1.f);
+            ++counter;
+        }
+        else
+        {
+            indices.push_back(0); // don't care, will be masked
+            v_mask.push_back(0.f);
+        }
+    }
+    if (c != nullptr)
+        *c = counter;
+
+    auto loss = neg_log_softmax(input, indices);
+    auto e_mask = dynet::input(*_cg, dynet::Dim({1}, words.size()), v_mask);
+    return loss * e_mask;
 }
 
 }

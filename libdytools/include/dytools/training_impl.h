@@ -35,13 +35,13 @@ dynet::Expression Training<Network, DataType>::compute_loss(typename std::vector
 }
 
 template <class Network, class DataType>
-dynet::Expression Training<Network, DataType>::compute_loss(const DataType& data)
+dynet::Expression Training<Network, DataType>::compute_loss(const DataType&)
 {
     throw std::runtime_error("Not implemented: compute_loss()");
 }
 
 template <class Network, class DataType>
-float Training<Network, DataType>::evaluate(const DataType& data)
+float Training<Network, DataType>::evaluate(const DataType&)
 {
     throw std::runtime_error("Not implemented: evaluate()");
 }
@@ -59,6 +59,12 @@ float Training<Network, DataType>::forward_backward(dynet::ComputationGraph& cg,
 template <class Network, class DataType>
 void Training<Network, DataType>::optimize(dynet::Trainer& trainer, std::vector<DataType>& train_data, const std::vector<DataType>& dev_data)
 {
+    std::cerr
+        << "Training!\n"
+        << " train dataset size: " << train_data.size() << "\n"
+        << " dev dataset size: " << dev_data.size() << "\n"
+        << std::endl;
+
     unsigned next_instance_index = train_data.size();
 
     float best_dev_score = -std::numeric_limits<float>::infinity();
@@ -102,10 +108,15 @@ void Training<Network, DataType>::optimize(dynet::Trainer& trainer, std::vector<
                 << std::endl;
 
         // evaluate on dev data
+        network->eval();
         float dev_score = evaluate(dev_data);
+        std::cerr
+            << "Dev evaluation: "
+            << dev_score
+            << std::endl;
         if (dev_score > best_dev_score)
         {
-            std::cerr << "dev score as increased: " << dev_score << std::endl;
+            std::cerr << "dev score as increased: " << dev_score << " > " << dev_score << std::endl;
             best_dev_score = dev_score;
             best_dev_epoch = epoch;
             n_epoch_without_improvement = 0u;
@@ -119,6 +130,12 @@ void Training<Network, DataType>::optimize(dynet::Trainer& trainer, std::vector<
 
         if (settings.patience > 0 && n_epoch_without_improvement >= settings.patience)
         {
+            ++ n_trials;
+            if (settings.max_trials > 0 && n_trials >= settings.max_trials)
+            {
+                std::cerr << "Maximum number of trial! Abort." << std::endl;
+                break;
+            }
             n_epoch_without_improvement = 0u;
             trainer.learning_rate = trainer.learning_rate * settings.lr_decay;
             std::cerr

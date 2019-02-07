@@ -1,28 +1,70 @@
 #pragma once
 
-#include "dynet/dict.h"
+#include <memory>
+#include <string>
+#include <vector>
+#include <unordered_map>
+
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/unordered_map.hpp>
+
+#include "dytools/utils.h"
 
 namespace dytools
 {
 
-struct Dict : public dynet::Dict
+struct DictSettings
 {
-    using dynet::Dict::size;
-    using dynet::Dict::freeze;
-    using dynet::Dict::is_frozen;
-    using dynet::Dict::contains;
+    bool lowercase = true;
+    std::string unk_word = "*UNK*";
+    std::string num_word = "*NUM*";
 
     template<class Archive>
     void serialize(Archive &ar, const unsigned int)
     {
-        ar & frozen;
-        ar & map_unk;
-        ar & unk_id;
-        ar & words_;
-        ar & d_;
+        ar & lowercase;
+        ar & unk_word;
+        ar & num_word;
     }
 };
+
+struct Dict
+{
+    typedef std::unordered_map<std::string, unsigned> Map;
+
+    DictSettings settings;
+    bool frozen = false;
+
+    std::vector<std::string> id_to_word;
+    Map word_to_id;
+
+    Dict();
+    Dict(const DictSettings& settings);
+
+    bool has_unk() const;
+    bool has_num() const;
+    unsigned size() const;
+    bool contains(const std::string& words) const;
+
+    void freeze();
+    bool is_frozen() const;
+    bool is_special(const std::string& word) const;
+
+    std::string normalize(const std::string& word) const;
+    unsigned convert(const std::string& word);
+    const std::string& convert(const unsigned& id) const;
+    void clear();
+
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int)
+    {
+        ar & settings;
+        ar & frozen;
+        ar & id_to_word;
+        ar & word_to_id;
+    }
+};
+
+std::shared_ptr<Dict> read_dict_from_file(const std::string &path);
 
 }

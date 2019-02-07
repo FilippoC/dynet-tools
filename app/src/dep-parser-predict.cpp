@@ -68,7 +68,7 @@ int main(int argc, char** argv)
         dynet::ComputationGraph cg;
         network.new_graph(cg);
 
-        const auto p_logis = network.full_logits(sentence);
+        const auto p_logis = network.logits(sentence);
         const auto e_tag_weights = p_logis.first;
         const auto e_arc_weights = p_logis.second;
 

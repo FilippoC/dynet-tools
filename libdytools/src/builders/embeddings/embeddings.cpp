@@ -1,11 +1,11 @@
-#include "dytools/builders/embeddings.h"
+#include "dytools/builders/embeddings/embeddings.h"
 
 #include <stdexcept>
 
 namespace dytools
 {
 
-EmbeddingsBuilder::EmbeddingsBuilder(dynet::ParameterCollection& pc, const EmbeddingsSettings& settings, std::shared_ptr<dynet::Dict> token_dict, std::shared_ptr<dynet::Dict> char_dict) :
+EmbeddingsBuilder::EmbeddingsBuilder(dynet::ParameterCollection& pc, const EmbeddingsSettings& settings, std::shared_ptr<dytools::Dict> token_dict, std::shared_ptr<dytools::Dict> char_dict) :
     settings(settings),
     local_pc(pc.add_subcollection("embeddings"))
 {
@@ -13,9 +13,9 @@ EmbeddingsBuilder::EmbeddingsBuilder(dynet::ParameterCollection& pc, const Embed
         throw std::runtime_error("Embeddings: you should use at least one of them.");
 
     if (settings.use_token_embeddings)
-        token_embeddings.reset(new TokenEmbeddingsBuilder(local_pc, settings.token_embeddings, token_dict));
+        token_embeddings.reset(new WordEmbeddingsBuilder(local_pc, settings.token_embeddings, token_dict));
     if (settings.use_char_embeddings)
-        char_embeddings.reset(new CharEmbeddingsBuilder(local_pc, settings.char_embeddings, char_dict));
+        char_embeddings.reset(new CharacterEmbeddingsBuilder(local_pc, settings.char_embeddings, char_dict));
 
     std::cerr
         << "Embeddings\n"
@@ -55,8 +55,8 @@ std::vector<dynet::Expression> EmbeddingsBuilder::operator()(const ConllSentence
 {
     if (settings.use_token_embeddings && settings.use_char_embeddings)
     {
-        auto tokens = (*token_embeddings)(sentence);
-        auto chars = (*char_embeddings)(sentence);
+        auto tokens = token_embeddings->get_all_as_vector<ConllWordGetter>(sentence.begin(), sentence.end());
+        auto chars = char_embeddings->get_all_as_vector<ConllWordGetter>(sentence.begin(), sentence.end());
 
         std::vector<dynet::Expression> ret;
         for (unsigned i = 0 ; i < sentence.size() ; ++i)
@@ -67,12 +67,12 @@ std::vector<dynet::Expression> EmbeddingsBuilder::operator()(const ConllSentence
     }
     else if (settings.use_token_embeddings)
     {
-        auto ret = (*token_embeddings)(sentence);
+        auto ret = token_embeddings->get_all_as_vector<ConllWordGetter>(sentence.begin(), sentence.end());
         return ret;
     }
     else
     {
-        auto ret = (*char_embeddings)(sentence);
+        auto ret = char_embeddings->get_all_as_vector<ConllWordGetter>(sentence.begin(), sentence.end());
         return ret;
     }
 }
