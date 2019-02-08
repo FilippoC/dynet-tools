@@ -94,7 +94,7 @@ unsigned Dict::convert(const std::string& _word)
     }
 }
 
-const std::string& Dict::convert(const unsigned& id) const
+const std::string& Dict::convert(const unsigned id) const
 {
     if (id > id_to_word.size())
         throw std::runtime_error("id too big: not in dict!");

@@ -3,6 +3,14 @@
 namespace dytools
 {
 
+unsigned int BiLSTMSettings::output_rows(const unsigned input_dim) const
+{
+    if (stacks == 0)
+        return input_dim;
+    else
+        return 2 * dim;
+}
+
 BiLSTMBuilder::BiLSTMBuilder(dynet::ParameterCollection &pc, const BiLSTMSettings &settings, unsigned input_dim) :
         settings(settings),
         local_pc(pc.add_subcollection("bilstm")),
@@ -34,10 +42,7 @@ BiLSTMBuilder::BiLSTMBuilder(dynet::ParameterCollection &pc, const BiLSTMSetting
 
 unsigned BiLSTMBuilder::output_rows() const
 {
-    if (settings.stacks == 0)
-        return input_dim;
-    else
-        return 2 * settings.dim;
+    return settings.output_rows(input_dim);
 }
 
 void BiLSTMBuilder::new_graph(dynet::ComputationGraph &cg, bool update)

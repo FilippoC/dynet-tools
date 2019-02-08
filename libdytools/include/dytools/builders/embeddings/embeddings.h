@@ -28,6 +28,8 @@ struct EmbeddingsSettings
         ar & token_embeddings;
         ar & char_embeddings;
     }
+
+    unsigned output_rows() const;
 };
 
 struct EmbeddingsBuilder : public Builder

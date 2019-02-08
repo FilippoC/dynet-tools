@@ -4,6 +4,12 @@
 namespace dytools
 {
 
+
+unsigned int CharacterEmbeddingsSettings::output_rows() const
+{
+    return 2 * bilstm.output_rows(dim);
+}
+
 CharacterEmbeddingsBuilder::CharacterEmbeddingsBuilder(dynet::ParameterCollection& pc, const CharacterEmbeddingsSettings& settings, std::shared_ptr<dytools::Dict> dict) :
         settings(settings),
         local_pc(pc.add_subcollection("embschar")),
@@ -65,7 +71,7 @@ std::vector<dynet::Expression> CharacterEmbeddingsBuilder::get_all_as_vector(con
 
 unsigned CharacterEmbeddingsBuilder::output_rows() const
 {
-    return 2 * bilstm.output_rows();
+    return settings.output_rows();
 }
 
 }

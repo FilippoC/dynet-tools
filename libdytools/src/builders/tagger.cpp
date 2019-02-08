@@ -29,7 +29,7 @@ TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSetting
     if (dict->size() < 50)
     {
         std::cerr << " classes: " << dict->convert(zero);
-        for (int i = 0; i < dict->size(); ++i)
+        for (auto i = 0u; i < dict->size(); ++i)
             std::cerr << "\t" << dict->convert(i);
         std::cerr << "\n\n";
     }

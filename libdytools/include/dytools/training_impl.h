@@ -7,65 +7,105 @@
 namespace dytools
 {
 
-template <class Network, class DataType>
-Training<Network, DataType>::Training(std::shared_ptr<Network> _network) :
+template <class Network, class DataType, class Evaluator>
+Training<Network, DataType, Evaluator>::Training(std::shared_ptr<Network> _network) :
     network(std::move(_network))
 {}
 
 
-template <class Network, class DataType>
-Training<Network, DataType>::Training(const TrainingSettings& settings, std::shared_ptr<Network> _network) :
+template <class Network, class DataType, class Evaluator>
+Training<Network, DataType, Evaluator>::Training(const TrainingSettings& settings, std::shared_ptr<Network> _network) :
 settings(settings),
 network(std::move(_network))
 {}
 
-template <class Network, class DataType>
-dynet::Expression Training<Network, DataType>::compute_loss(typename std::vector<DataType>::const_iterator begin_data, typename std::vector<DataType>::const_iterator end_data)
+
+template <class Network, class DataType, class Evaluator>
+dynet::Expression Training<Network, DataType, Evaluator>::labeled_loss(const DataType &data)
+{
+    return network->labeled_loss(data);
+}
+
+template <class Network, class DataType, class Evaluator>
+dynet::Expression Training<Network, DataType, Evaluator>::unlabeled_loss(const DataType &data)
+{
+    return network->unlabeled_loss(data);
+}
+
+template <class Network, class DataType, class Evaluator>
+float Training<Network, DataType, Evaluator>::forward_backward(
+        dynet::ComputationGraph& cg,
+        typename std::vector<DataType>::const_iterator begin_labelled_data,
+        typename std::vector<DataType>::const_iterator end_labelled_data,
+        typename std::vector<DataType>::const_iterator begin_unlabelled_data,
+        typename std::vector<DataType>::const_iterator end_unlabelled_data
+        )
 {
     std::vector<dynet::Expression> losses;
-    for (; begin_data != end_data ; ++begin_data)
-        losses.push_back(compute_loss(*begin_data));
+
+    for (; begin_labelled_data != end_labelled_data; ++begin_labelled_data)
+        losses.push_back(labeled_loss(*begin_labelled_data));
+
+    for (; begin_unlabelled_data != end_unlabelled_data; ++begin_unlabelled_data)
+        losses.push_back(unlabeled_loss(*begin_unlabelled_data));
 
     if (losses.size() == 0u)
         throw std::runtime_error("No training data for the update");
-    else if (losses.size() == 1u)
-        return losses.at(0u);
-    else
-        return dynet::sum(losses) / (float) losses.size();
-}
 
-template <class Network, class DataType>
-dynet::Expression Training<Network, DataType>::compute_loss(const DataType&)
-{
-    throw std::runtime_error("Not implemented: compute_loss()");
-}
+    auto e_loss = (losses.size() == 1u ? losses.at(0u) : dynet::sum(losses) / (float) losses.size());
 
-template <class Network, class DataType>
-float Training<Network, DataType>::evaluate(const DataType&)
-{
-    throw std::runtime_error("Not implemented: evaluate()");
-}
-
-template <class Network, class DataType>
-float Training<Network, DataType>::forward_backward(dynet::ComputationGraph& cg, typename std::vector<DataType>::const_iterator begin_data, typename std::vector<DataType>::const_iterator end_data)
-{
-    auto e_loss = compute_loss(begin_data, end_data);
     const auto update_loss = as_scalar(cg.forward(e_loss));
     cg.backward(e_loss);
 
     return update_loss;
 }
 
-template <class Network, class DataType>
-void Training<Network, DataType>::optimize(dynet::Trainer& trainer, std::vector<DataType>& train_data, const std::vector<DataType>& dev_data)
+template <class Network, class DataType, class Evaluator>
+void Training<Network, DataType, Evaluator>::optimize_supervised(
+        dynet::Trainer &trainer,
+        std::vector<DataType> &labeled_data,
+        const std::vector<DataType> &dev_data
+)
 {
-    std::cerr
-        << "Training!\n"
-        << " train dataset size: " << train_data.size() << "\n"
-        << " dev dataset size: " << dev_data.size() << "\n"
-        << std::endl;
+    training_settings("Supervised training");
+    std::vector<DataType> fake_container;
+    optimize(trainer, labeled_data, fake_container, dev_data);
+}
 
-    unsigned next_instance_index = train_data.size();
+template <class Network, class DataType, class Evaluator>
+void Training<Network, DataType, Evaluator>::optimize_unsupervised(
+        dynet::Trainer &trainer,
+        std::vector<DataType> &unlabeled_data,
+        const std::vector<DataType> &dev_data
+)
+{
+    training_settings("Unsupervised training");
+    std::vector<DataType> fake_container;
+    optimize(trainer, fake_container, unlabeled_data, dev_data);
+}
+
+template <class Network, class DataType, class Evaluator>
+void Training<Network, DataType, Evaluator>::optimize_semisupervised(
+        dynet::Trainer &trainer,
+        std::vector<DataType> &labeled_data,
+        std::vector<DataType> &unlabeled_data,
+        const std::vector<DataType> &dev_data
+)
+{
+    training_settings("Semi-supervised training");
+    optimize(trainer, labeled_data, unlabeled_data, dev_data);
+}
+
+template <class Network, class DataType, class Evaluator>
+void Training<Network, DataType, Evaluator>::optimize(
+        dynet::Trainer &trainer,
+        std::vector<DataType> &labeled_data,
+        std::vector<DataType> &unlabeled_data,
+        const std::vector<DataType> &dev_data
+)
+{
+    unsigned next_labeled_instance_index = labeled_data.size();
+    unsigned next_unlabeled_instance_index = unlabeled_data.size();
 
     float best_dev_score = -std::numeric_limits<float>::infinity();
     unsigned best_dev_epoch = 0u;
@@ -80,22 +120,47 @@ void Training<Network, DataType>::optimize(dynet::Trainer& trainer, std::vector<
         auto start_epoch = std::chrono::steady_clock::now();
         for (unsigned update = 0; update < settings.n_updates_per_epoch; ++update)
         {
-            if (next_instance_index >= train_data.size())
+            auto labeled_data_begin = labeled_data.end();
+            auto labeled_data_end = labeled_data.end();
+            auto unlabeled_data_begin = unlabeled_data.end();
+            auto unlabeled_data_end = unlabeled_data.end();
+
+            if (labeled_data.size() > 0)
             {
-                std::random_shuffle(train_data.begin(), train_data.end());
-                next_instance_index = 0u;
+                if (next_labeled_instance_index >= labeled_data.size())
+                {
+                    std::random_shuffle(labeled_data.begin(), labeled_data.end());
+                    next_labeled_instance_index = 0u;
+                }
+
+                labeled_data_begin = labeled_data.begin() + next_labeled_instance_index;
+                labeled_data_end = labeled_data.begin() + next_labeled_instance_index + settings.batch_size;
+                next_labeled_instance_index += settings.batch_size;
             }
 
-            auto data_begin = train_data.begin() + next_instance_index;
-            auto data_end = train_data.begin() + next_instance_index + settings.batch_size;
-            next_instance_index += settings.batch_size;
+            if (unlabeled_data.size() > 0)
+            {
+                if (next_unlabeled_instance_index >= unlabeled_data.size())
+                {
+                    std::random_shuffle(unlabeled_data.begin(), unlabeled_data.end());
+                    next_unlabeled_instance_index = 0u;
+                }
+
+                unlabeled_data_begin = unlabeled_data.begin() + next_unlabeled_instance_index;
+                unlabeled_data_end = unlabeled_data.begin() + next_unlabeled_instance_index + settings.batch_size;
+                next_unlabeled_instance_index += settings.batch_size;
+            }
 
             // build new computation graph
             dynet::ComputationGraph cg;
             network->new_graph(cg);
 
             // compute the loss of each instance in the batch
-            const auto update_loss = forward_backward(cg, data_begin, data_end);
+            const auto update_loss = forward_backward(
+                    cg,
+                    labeled_data_begin, labeled_data_end,
+                    unlabeled_data_begin, unlabeled_data_end
+                    );
             trainer.update();
 
             epoch_loss += update_loss;
@@ -106,6 +171,9 @@ void Training<Network, DataType>::optimize(dynet::Trainer& trainer, std::vector<
                 << "\t/\tDuration: "
                 << std::chrono::duration_cast<std::chrono::seconds>(end_epoch - start_epoch).count()
                 << std::endl;
+
+        if (settings.save_at_each_epoch)
+            save(settings.model_path + "." + std::to_string(epoch));
 
         // evaluate on dev data
         network->eval();
@@ -155,49 +223,58 @@ void Training<Network, DataType>::optimize(dynet::Trainer& trainer, std::vector<
         << std::endl;
 }
 
-template <class Network, class DataType>
-float Training<Network, DataType>::evaluate(const std::vector<DataType>& data)
+template <class Network, class DataType, class Evaluator>
+float Training<Network, DataType, Evaluator>::evaluate(const std::vector<DataType>& data)
 {
-    float total = 0.f;
-    network->eval();
+    return Evaluator()(network.get(), data);
+}
 
-    const auto start_dev = std::chrono::steady_clock::now();
-    for (auto const &instance : data)
-    {
-        std::cerr << "EVAL\n";
-        total += evaluate(instance);
-    }
-    const auto end_dev = std::chrono::steady_clock::now();
+template <class Network, class DataType, class Evaluator>
+void Training<Network, DataType, Evaluator>::save(const std::string& path)
+{
+    std::cerr << "Saving model to: " << path << std::endl;
+    dynet::TextFileSaver s(path);
+    s.save(network->local_pc);
+}
 
-    const auto dev_score = total / (float) data.size();
+template <class Network, class DataType, class Evaluator>
+void Training<Network, DataType, Evaluator>::save()
+{
+    if (settings.model_path.size() > 0)
+        save(settings.model_path);
+}
+
+template <class Network, class DataType, class Evaluator>
+void Training<Network, DataType, Evaluator>::load(const std::string& path)
+{
+    std::cerr << "Loading model from: " << path << std::endl;
+    dynet::TextFileLoader s(path);
+    s.populate(network->local_pc);
+}
+
+template <class Network, class DataType, class Evaluator>
+void Training<Network, DataType, Evaluator>::load()
+{
+    if (settings.model_path.size() > 0)
+        load(settings.model_path);
+}
+
+
+template <class Network, class DataType, class Evaluator>
+void Training<Network, DataType, Evaluator>::training_settings(const std::string& mode)
+{
     std::cerr
-            << "Dev score: " << dev_score
-            << "\t/\tDuration: " << std::chrono::duration_cast<std::chrono::seconds>(end_dev - start_dev).count()
-            << std::endl;
-    return dev_score;
-}
-
-
-template <class Network, class DataType>
-void Training<Network, DataType>::save()
-{
-    if (settings.model_path.size() > 0)
-    {
-        std::cerr << "Saving model to: " << settings.model_path << std::endl;
-        dynet::TextFileSaver s(settings.model_path);
-        s.save(network->local_pc);
-    }
-}
-
-template <class Network, class DataType>
-void Training<Network, DataType>::load()
-{
-    if (settings.model_path.size() > 0)
-    {
-        std::cerr << "Loading model from: " << settings.model_path << std::endl;
-        dynet::TextFileLoader s(settings.model_path);
-        s.populate(network->local_pc);
-    }
+        << mode << ":\n"
+        << " n. epochs: " << settings.n_epoch << "\n"
+        << " n. updates per epoch: " << settings.n_updates_per_epoch << "\n"
+        << " batch size: " << settings.batch_size << "\n"
+        << " patience: " << settings.patience << "\n"
+        << " max trials: " << settings.max_trials << "\n"
+        << " lr decay: " << settings.lr_decay << "\n"
+        << " reload params: " << (settings.reload_parameters ? "yes" : "no") << "\n"
+        << " output path: " << settings.model_path << "\n"
+        << " save params after each epoch: " << (settings.save_at_each_epoch ? "yes" : "no") << "\n"
+        << std::endl;
 }
 
 }

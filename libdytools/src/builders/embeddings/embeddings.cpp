@@ -5,6 +5,19 @@
 namespace dytools
 {
 
+unsigned EmbeddingsSettings::output_rows() const
+{
+    std::cerr
+            << "use_token_embeddings: " << (use_token_embeddings ? "yes" : "no") << "\n"
+            << "use_char_embeddings: " << (use_char_embeddings ? "yes" : "no") << "\n"
+            << "token dim:" << (use_token_embeddings ? token_embeddings.output_rows() : 0u) << "\n"
+            << "char dim: " << (use_char_embeddings ? char_embeddings.output_rows() : 0u) << "\n";
+    return
+            (use_token_embeddings ? token_embeddings.output_rows() : 0u)
+            +
+            (use_char_embeddings ? char_embeddings.output_rows() : 0u);
+}
+
 EmbeddingsBuilder::EmbeddingsBuilder(dynet::ParameterCollection& pc, const EmbeddingsSettings& settings, std::shared_ptr<dytools::Dict> token_dict, std::shared_ptr<dytools::Dict> char_dict) :
     settings(settings),
     local_pc(pc.add_subcollection("embeddings"))
@@ -27,11 +40,7 @@ EmbeddingsBuilder::EmbeddingsBuilder(dynet::ParameterCollection& pc, const Embed
 
 unsigned EmbeddingsBuilder::output_rows() const
 {
-    return
-            (settings.use_token_embeddings ? token_embeddings->output_rows() : 0u)
-            +
-            (settings.use_char_embeddings ? char_embeddings->output_rows() : 0u)
-            ;
+    return settings.output_rows();
 }
 
 void EmbeddingsBuilder::new_graph(dynet::ComputationGraph& cg, bool update)

@@ -68,9 +68,9 @@ void write(std::ostream& os, const std::vector<ConllSentence>& data);
 unsigned read(const std::string&, std::vector<ConllSentence>& output);
 
 template<class It>
-std::shared_ptr<dytools::Dict> build_conll_token_dict(It begin, It end)
+std::shared_ptr<dytools::Dict> build_conll_token_dict(const DictSettings& settings, It begin, It end)
 {
-    auto dict = std::make_shared<dytools::Dict>();
+    auto dict = std::make_shared<dytools::Dict>(settings);
     for(;begin != end; ++begin)
     {
         const ConllSentence& sentence = *begin;
@@ -82,9 +82,9 @@ std::shared_ptr<dytools::Dict> build_conll_token_dict(It begin, It end)
 }
 
 template<class It>
-std::shared_ptr<dytools::Dict> build_conll_char_dict(It begin, It end)
+std::shared_ptr<dytools::Dict> build_conll_char_dict(const DictSettings& settings, It begin, It end)
 {
-    auto dict = std::make_shared<dytools::Dict>();
+    auto dict = std::make_shared<dytools::Dict>(settings);
     for(;begin != end; ++begin)
     {
         const ConllSentence& sentence = *begin;
@@ -98,8 +98,8 @@ std::shared_ptr<dytools::Dict> build_conll_char_dict(It begin, It end)
             }
         }
     }
-    dict->convert("<S>");
-    dict->convert("</S>");
+    dict->convert("<s>");
+    dict->convert("</s>");
     dict->freeze();
     return dict;
 }
@@ -113,6 +113,20 @@ std::shared_ptr<dytools::Dict> build_conll_tag_dict(It begin, It end)
         const ConllSentence& sentence = *begin;
         for (const ConllToken& token : sentence)
             dict->convert(token.postag);
+    }
+    dict->freeze();
+    return dict;
+}
+
+template<class It>
+std::shared_ptr<dytools::Dict> build_conll_label_dict(It begin, It end)
+{
+    auto dict = std::make_shared<dytools::Dict>();
+    for(;begin != end; ++begin)
+    {
+        const ConllSentence& sentence = *begin;
+        for (const ConllToken& token : sentence)
+            dict->convert(token.deprel);
     }
     dict->freeze();
     return dict;

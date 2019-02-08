@@ -1,5 +1,7 @@
 #pragma once
 
+#include "dynet/expr.h"
+
 namespace dytools
 {
 

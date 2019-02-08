@@ -20,6 +20,8 @@ struct BiLSTMSettings
         ar & layers;
         ar & dim;
     }
+
+    unsigned int output_rows(const unsigned input_dim) const;
 };
 
 struct BiLSTMBuilder : public Builder

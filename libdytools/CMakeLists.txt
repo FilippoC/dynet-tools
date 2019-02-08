@@ -10,6 +10,7 @@ add_library(
 
         src/builders/builder.cpp
         src/builders/biaffine.cpp
+        src/builders/biaffine_tagger.cpp
         src/builders/bilstm.cpp
         src/builders/tagger.cpp
         src/builders/embeddings/word.cpp
