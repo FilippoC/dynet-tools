@@ -178,13 +178,9 @@ void Training<Network, DataType, Evaluator>::optimize(
         // evaluate on dev data
         network->eval();
         float dev_score = evaluate(dev_data);
-        std::cerr
-            << "Dev evaluation: "
-            << dev_score
-            << std::endl;
         if (dev_score > best_dev_score)
         {
-            std::cerr << "dev score as increased: " << dev_score << " > " << dev_score << std::endl;
+            std::cerr << "dev score as increased: " << dev_score << " > " << best_dev_score << std::endl;
             best_dev_score = dev_score;
             best_dev_epoch = epoch;
             n_epoch_without_improvement = 0u;
