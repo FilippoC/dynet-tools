@@ -53,9 +53,6 @@ float DependencyParserEvaluator::operator()(BaseDependencyNetwork* network, cons
     for (auto const& sentence : data)
     {
         dynet::ComputationGraph cg;
-        cg.set_immediate_compute(true);
-        cg.set_check_validity(true);
-
         network->new_graph(cg);
 
         const auto e_weights = std::get<1>(network->logits(sentence));
