@@ -73,8 +73,8 @@ dynet::Expression BiAffineBuilder::operator()(const dynet::Expression& c_input, 
         : c_input
         );
 
-    auto e_head = dynet::transpose(dynet::tanh(e_head_proj_W * input + e_head_proj_bias));
-    auto e_mod = dynet::tanh(e_mod_proj_W * input + e_mod_proj_bias);
+    auto e_head = dynet::transpose(dynet::rectify(e_head_proj_W * input + e_head_proj_bias));
+    auto e_mod = dynet::rectify(e_mod_proj_W * input + e_mod_proj_bias);
 
     auto weights =
             e_head * e_biaffine_head_mod * e_mod
