@@ -92,13 +92,12 @@ dynet::Expression BiAffineBuilder::operator()(const std::vector<dynet::Expressio
     if (root_prefix)
     {
         std::vector<dynet::Expression> input2;
-        if (root_prefix)
-            input2.push_back(e_root_prefix);
+        input2.push_back(e_root_prefix);
         input2.insert(std::end(input2), std::begin(input), std::end(input));
         return (*this)(dynet::concatenate_cols(input2), false);
     }
     else
-        return (*this)(dynet::concatenate_cols(input));
+        return (*this)(dynet::concatenate_cols(input), false);
 }
 
 

@@ -35,7 +35,7 @@ void ConllSentence::update_tags(const std::vector<unsigned>& tags)
     if (tags.size() != size())
         throw std::length_error("Tag list and sentence are of different size");
 
-    for (auto i = 0 ; i < size() ; ++i)
+    for (auto i = 0u ; i < size() ; ++i)
         (*this)[i].postag = tags[i];
 }
 void ConllSentence::update_heads(const std::vector<unsigned>& heads)
@@ -43,7 +43,7 @@ void ConllSentence::update_heads(const std::vector<unsigned>& heads)
     if (heads.size() != this->size())
         throw std::length_error("head list and sentence are of different size");
 
-    for (auto i = 0 ; i < size() ; ++i)
+    for (auto i = 0u ; i < size() ; ++i)
         (*this)[i].postag = heads[i];
 }
 

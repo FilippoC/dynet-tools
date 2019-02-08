@@ -41,9 +41,15 @@ int main(int argc, char** argv)
 
 
     std::cerr << "Building dictionnariess..." << std::endl;
-    auto token_dict = dytools::build_conll_token_dict(train_data.begin(), train_data.end());
-    auto char_dict = dytools::build_conll_char_dict(train_data.begin(), train_data.end());
+    dytools::DictSettings voc_settings;
+    voc_settings.num_word = "*NUM*";
+    voc_settings.unk_word = "*UNK*";
+    voc_settings.lowercase = true;
+    auto token_dict = dytools::build_conll_token_dict(voc_settings, train_data.begin(), train_data.end());
+    auto char_dict = dytools::build_conll_char_dict(voc_settings, train_data.begin(), train_data.end());
+
     auto tag_dict = dytools::build_conll_tag_dict(train_data.begin(), train_data.end());
+    auto label_dict = dytools::build_conll_label_dict(train_data.begin(), train_data.end());
 
     std::cerr << "Saving network settings..." << std::endl;
     {
@@ -53,6 +59,7 @@ int main(int argc, char** argv)
         out.save(*token_dict);
         out.save(*char_dict);
         out.save(*tag_dict);
+        out.save(*label_dict);
 
         // save network settings
         out.save(network_settings);
@@ -62,13 +69,13 @@ int main(int argc, char** argv)
 
     std::cerr << "Building network..." << std::endl;
     dynet::ParameterCollection pc;
-    auto network = std::make_shared<dytools::DependencyNetwork>(pc, network_settings, token_dict, char_dict, tag_dict);
+    auto network = std::make_shared<dytools::DependencyNetwork>(pc, network_settings, token_dict, char_dict, tag_dict, label_dict);
 
 
     std::cerr << "Training..." << std::endl;
     dynet::AdamTrainer optimizer(pc);
-    dytools::DependencyParserTrainer trainer(training_settings, network);
-    trainer.optimize(optimizer, train_data, dev_data);
+    dytools::Training<dytools::DependencyNetwork, dytools::ConllSentence, dytools::DependencyParserEvaluator> trainer(training_settings, network);
+    trainer.optimize_supervised(optimizer, train_data, dev_data);
 
 
     std::cerr << "Done!" << std::endl;
@@ -159,11 +166,13 @@ bool read_command_line_args(int& argc, char**& argv, dytools::TrainingSettings& 
                     >> c
                     >> network_settings.biaffine.proj_size
                     ;
+                break;
             case 'm':
                 network_settings.biaffine.mod_bias = true;
                 break;
             case 't':
                 network_settings.tagger.output_bias = true;
+                break;
             case '?':
             default:
                 return false;

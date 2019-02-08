@@ -3,9 +3,15 @@
 namespace dytools
 {
 
+
+unsigned int WordEmbeddingsSettings::output_rows() const
+{
+    return dim;
+}
+
 WordEmbeddingsBuilder::WordEmbeddingsBuilder(dynet::ParameterCollection& pc, const WordEmbeddingsSettings& settings, const std::string& name) :
         settings(settings),
-        local_pc(pc.add_subcollection("name"))
+        local_pc(pc.add_subcollection(name))
 {}
 
 WordEmbeddingsBuilder::WordEmbeddingsBuilder(dynet::ParameterCollection& pc, const WordEmbeddingsSettings& settings, std::shared_ptr<dytools::Dict> dict) :
@@ -95,7 +101,7 @@ std::vector<dynet::Expression> WordEmbeddingsBuilder::get_all_as_vector(const st
 
 unsigned WordEmbeddingsBuilder::output_rows() const
 {
-    return settings.dim;
+    return settings.output_rows();
 }
 
 }

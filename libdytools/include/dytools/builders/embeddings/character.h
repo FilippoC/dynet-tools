@@ -23,6 +23,8 @@ struct CharacterEmbeddingsSettings
         ar & dim;
         ar & bilstm;
     }
+
+    unsigned int output_rows() const;
 };
 
 struct CharacterEmbeddingsBuilder : public Builder

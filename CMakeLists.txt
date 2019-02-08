@@ -3,6 +3,19 @@ project(dynet-tools)
 
 set(CMAKE_CXX_STANDARD 11)
 
+add_definitions("-Wall")
+add_definitions("-Wextra")
+add_definitions("-pedantic")
+add_definitions("-O3")
+add_definitions("-Wfatal-errors")
+add_definitions("-g")
+add_definitions("-std=c++11")
+add_definitions("-funroll-loops")
+add_definitions("-DEIGEN_FAST_MATH")
+add_definitions("-march=native")
+add_definitions("-DBOOST_LOG_DYN_LINK")
+
+
 include_directories("/Users/filippo/repos/dynet")
 
 add_subdirectory(libdytools)

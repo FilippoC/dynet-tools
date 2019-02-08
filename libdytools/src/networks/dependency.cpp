@@ -2,16 +2,22 @@
 
 #include <limits>
 #include <dytools/training.h>
-#include <dytools/loss/dependency.h>
 #include <dytools/algorithms/dependency-parser.h>
 
 namespace dytools
 {
 
-DependencyNetwork::DependencyNetwork(dynet::ParameterCollection& pc, const DependencySettings& settings, std::shared_ptr<dytools::Dict> token_dict, std::shared_ptr<dytools::Dict> char_dict, std::shared_ptr<dytools::Dict> tagger_dict) :
+DependencyNetwork::DependencyNetwork(
+        dynet::ParameterCollection& pc,
+        const DependencySettings& settings,
+        std::shared_ptr<dytools::Dict> token_dict,
+        std::shared_ptr<dytools::Dict> char_dict,
+        std::shared_ptr<dytools::Dict> tagger_dict,
+        std::shared_ptr<dytools::Dict> label_dict
+) :
+        BaseDependencyNetwork(pc, settings, tagger_dict, label_dict, settings.embeddings.output_rows()),
         settings(settings),
-        embeddings(local_pc, settings.embeddings, token_dict, char_dict),
-        BaseDependencyNetwork(local_pc, settings, tagger_dict, embeddings.output_rows())
+        embeddings(local_pc, settings.embeddings, token_dict, char_dict)
 {}
 
 void DependencyNetwork::new_graph(dynet::ComputationGraph& cg, bool update)
@@ -40,37 +46,19 @@ unsigned DependencyNetwork::get_embeddings_size() const
     return embeddings.output_rows();
 }
 
-
-
-
-DependencyParserTrainer::DependencyParserTrainer(const TrainingSettings& settings, std::shared_ptr<DependencyNetwork> _network) :
-    dytools::Training<dytools::DependencyNetwork, dytools::ConllSentence>(settings, _network)
-{}
-
-dynet::Expression DependencyParserTrainer::compute_loss(const dytools::ConllSentence& sentence)
-{
-    const auto p_weights = network->logits(sentence);
-
-    std::vector<unsigned> gold_idx;
-    gold_idx.push_back(0u); // root word, will be masked
-    for (unsigned i = 0u; i < sentence.size(); ++i)
-    {
-        const unsigned head = sentence.at(i).head == i ? 0 : sentence.at(i).head + 1;
-        gold_idx.push_back(head);
-    }
-
-    return head_neg_log_likelihood(p_weights.second, gold_idx);
-}
-float DependencyParserTrainer::evaluate(const std::vector<dytools::ConllSentence>& data)
+float DependencyParserEvaluator::operator()(BaseDependencyNetwork* network, const std::vector<dytools::ConllSentence>& data) const
 {
     auto n_correct = 0.f;
     auto total = 0.f;
     for (auto const& sentence : data)
     {
         dynet::ComputationGraph cg;
+        cg.set_immediate_compute(true);
+        cg.set_check_validity(true);
+
         network->new_graph(cg);
 
-        const auto e_weights = network->logits(sentence).second;
+        const auto e_weights = std::get<1>(network->logits(sentence));
         const auto v_weights = as_vector(cg.forward(e_weights));
 
         const auto heads = non_projective_dependency_parser(sentence.size(), v_weights);
@@ -78,7 +66,9 @@ float DependencyParserTrainer::evaluate(const std::vector<dytools::ConllSentence
         total += sentence.size();
     }
 
-    return n_correct / total;
+    const float score =  n_correct / total;
+    std::cerr << "Dev evaluation: " << score << "\t" << n_correct << "/" << total << "\n";
+    return score;
 }
 
 }

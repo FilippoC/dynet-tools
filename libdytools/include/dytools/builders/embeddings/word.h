@@ -16,6 +16,8 @@ struct WordEmbeddingsSettings
     {
         ar & dim;
     }
+
+    unsigned int output_rows() const;
 };
 
 struct WordEmbeddingsBuilder : public Builder

@@ -15,9 +15,9 @@ namespace dytools
 
 struct DictSettings
 {
-    bool lowercase = true;
-    std::string unk_word = "*UNK*";
-    std::string num_word = "*NUM*";
+    bool lowercase = false;
+    std::string unk_word = "";
+    std::string num_word = "";
 
     template<class Archive>
     void serialize(Archive &ar, const unsigned int)
@@ -52,7 +52,7 @@ struct Dict
 
     std::string normalize(const std::string& word) const;
     unsigned convert(const std::string& word);
-    const std::string& convert(const unsigned& id) const;
+    const std::string& convert(const unsigned id) const;
     void clear();
 
     template<class Archive>
