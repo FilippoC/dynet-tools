@@ -44,7 +44,7 @@ void ConllSentence::update_heads(const std::vector<unsigned>& heads)
         throw std::length_error("head list and sentence are of different size");
 
     for (auto i = 0u ; i < size() ; ++i)
-        (*this)[i].postag = heads[i];
+        (*this)[i].head = heads[i];
 }
 
 // gold sentence, we have to compute the dependency tree as a sparse matrix
@@ -124,22 +124,6 @@ unsigned read(const std::string& path, std::vector<ConllSentence>& output)
             sentence = new ConllSentence();
             next_token_id = 0u;
         }
-
-        /* in swedish, a token can contain a space
-        std::istringstream ss(line);
-        ss
-            >> id
-            >> word
-            >> lemma
-            >> cpostag
-            >> postag
-            >> feats
-            >> str_head
-            >> deprel
-            >> phead
-            >> pdeprel
-        ;
-        */
 
         std::vector<std::string> strs;
         boost::split(strs, line, boost::is_any_of("\t"));
