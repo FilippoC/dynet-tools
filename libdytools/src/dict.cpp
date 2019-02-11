@@ -108,9 +108,9 @@ void Dict::clear()
     id_to_word.clear();
 }
 
-std::shared_ptr<Dict> read_dict_from_file(const std::string &path)
+std::shared_ptr<Dict> read_dict_from_file(const DictSettings& settings, const std::string &path)
 {
-    std::shared_ptr<Dict> dict(new Dict());
+    std::shared_ptr<Dict> dict(new Dict(settings));
 
     std::ifstream fin(path);
     if (!fin.is_open())

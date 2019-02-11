@@ -65,6 +65,6 @@ struct Dict
     }
 };
 
-std::shared_ptr<Dict> read_dict_from_file(const std::string &path);
+std::shared_ptr<Dict> read_dict_from_file(const DictSettings& settings, const std::string &path);
 
 }
