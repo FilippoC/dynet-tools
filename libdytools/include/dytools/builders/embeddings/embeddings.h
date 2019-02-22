@@ -6,7 +6,6 @@
 #include "dytools/data/conll.h"
 #include "dytools/builders/embeddings/character.h"
 #include "dytools/builders/embeddings/word.h"
-#include "dytools/builders/builder.h"
 
 namespace dytools
 {
@@ -32,7 +31,7 @@ struct EmbeddingsSettings
     unsigned output_rows() const;
 };
 
-struct EmbeddingsBuilder : public Builder
+struct EmbeddingsBuilder
 {
     const EmbeddingsSettings settings;
     dynet::ParameterCollection local_pc;
@@ -51,8 +50,7 @@ struct EmbeddingsBuilder : public Builder
             std::shared_ptr<dytools::Dict> char_dict
     );
 
-    void new_graph(dynet::ComputationGraph& cg, bool update=true);
-    void set_is_training(bool value) override;
+    void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
     std::vector<dynet::Expression> operator()(const ConllSentence& sentence);
 
     unsigned output_rows() const;

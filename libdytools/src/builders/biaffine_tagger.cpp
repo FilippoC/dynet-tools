@@ -54,7 +54,7 @@ BiAffineTaggerBuilder::BiAffineTaggerBuilder(
     std::cerr << "\n";
 }
 
-void BiAffineTaggerBuilder::new_graph(dynet::ComputationGraph &cg, bool update)
+void BiAffineTaggerBuilder::new_graph(dynet::ComputationGraph &cg, bool, bool update)
 {
     if (update)
     {

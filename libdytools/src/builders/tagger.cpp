@@ -35,7 +35,7 @@ TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSetting
     }
 }
 
-void TaggerBuilder::new_graph(dynet::ComputationGraph& cg, bool update)
+void TaggerBuilder::new_graph(dynet::ComputationGraph& cg, bool, bool update)
 {
     _cg = &cg;
     builder.new_graph(cg, update);

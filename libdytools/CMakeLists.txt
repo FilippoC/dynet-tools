@@ -4,11 +4,12 @@ add_library(
         src/io.cpp
         src/dict.cpp
         src/utils.cpp
+        src/masked_sequence.cpp
 
         src/algorithms/dependency-parser.cpp
+        src/algorithms/span-parser.cpp
         src/algorithms/tagger.cpp
 
-        src/builders/builder.cpp
         src/builders/biaffine.cpp
         src/builders/biaffine_tagger.cpp
         src/builders/bilstm.cpp
@@ -17,6 +18,9 @@ add_library(
         src/builders/embeddings/character.cpp
         src/builders/embeddings/embeddings.cpp
         src/builders/gcn.cpp
+        src/builders/mlp.cpp
+        src/builders/masked_lstm.cpp
+        src/builders/masked_bilstm.cpp
 
         src/data/conll.cpp
 
@@ -24,7 +28,13 @@ add_library(
         src/networks/base-dependency.cpp
 
         src/loss/dependency.cpp
+
+        src/functions/root_arborescence_marginals.cpp
+        src/functions/masking.cpp
 )
+
+FIND_PACKAGE(Boost COMPONENTS regex serialization filesystem REQUIRED)
+target_link_libraries(libdytools ${Boost_LIBRARIES})
 
 target_include_directories(
         libdytools PUBLIC
@@ -32,6 +42,3 @@ target_include_directories(
         $<INSTALL_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         PRIVATE src
 )
-
-FIND_PACKAGE(Boost COMPONENTS regex serialization filesystem REQUIRED)
-target_link_libraries(libdytools ${Boost_LIBRARIES})

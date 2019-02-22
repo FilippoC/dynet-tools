@@ -11,7 +11,7 @@ add_definitions("-Wfatal-errors")
 add_definitions("-g")
 add_definitions("-std=c++11")
 add_definitions("-funroll-loops")
-add_definitions("-DEIGEN_FAST_MATH")
+#add_definitions("-DEIGEN_FAST_MATH")
 add_definitions("-march=native")
 add_definitions("-DBOOST_LOG_DYN_LINK")
 

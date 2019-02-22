@@ -32,7 +32,7 @@ BiAffineBuilder::BiAffineBuilder(dynet::ParameterCollection& pc, const BiAffineS
         ;
 }
 
-void BiAffineBuilder::new_graph(dynet::ComputationGraph &cg, bool update)
+void BiAffineBuilder::new_graph(dynet::ComputationGraph &cg, bool, bool update)
 {
     if (update)
     {

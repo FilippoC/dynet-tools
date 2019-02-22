@@ -26,18 +26,13 @@ CharacterEmbeddingsBuilder::CharacterEmbeddingsBuilder(dynet::ParameterCollectio
         ;
 }
 
-void CharacterEmbeddingsBuilder::new_graph(dynet::ComputationGraph& cg, bool update)
+void CharacterEmbeddingsBuilder::new_graph(dynet::ComputationGraph& cg, bool training, bool update)
 {
     _cg = &cg;
     _update = update;
+    _is_training = training;
 
-    bilstm.new_graph(cg, update);
-}
-
-void CharacterEmbeddingsBuilder::set_is_training(bool value)
-{
-    Builder::set_is_training(value);
-    bilstm.set_is_training(value);
+    bilstm.new_graph(cg, training, update);
 }
 
 dynet::Expression CharacterEmbeddingsBuilder::get_char_embedding(const std::string& c)

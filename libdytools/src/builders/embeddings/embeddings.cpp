@@ -43,21 +43,12 @@ unsigned EmbeddingsBuilder::output_rows() const
     return settings.output_rows();
 }
 
-void EmbeddingsBuilder::new_graph(dynet::ComputationGraph& cg, bool update)
+void EmbeddingsBuilder::new_graph(dynet::ComputationGraph& cg, bool training, bool update)
 {
     if (settings.use_token_embeddings)
-        token_embeddings->new_graph(cg, update);
+        token_embeddings->new_graph(cg, training, update);
     if (settings.use_char_embeddings)
-        char_embeddings->new_graph(cg, update);
-}
-
-void EmbeddingsBuilder::set_is_training(bool value)
-{
-    Builder::set_is_training(value);
-    if (settings.use_token_embeddings)
-        token_embeddings->set_is_training(value);
-    if (settings.use_char_embeddings)
-        char_embeddings->set_is_training(value);
+        char_embeddings->new_graph(cg, training, update);
 }
 
 std::vector<dynet::Expression> EmbeddingsBuilder::operator()(const ConllSentence& sentence)

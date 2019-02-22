@@ -2,7 +2,6 @@
 
 #include "dynet/model.h"
 #include "dynet/lstm.h"
-#include "dytools/builders/builder.h"
 
 namespace dytools
 {
@@ -24,7 +23,7 @@ struct BiLSTMSettings
     unsigned int output_rows(const unsigned input_dim) const;
 };
 
-struct BiLSTMBuilder : public Builder
+struct BiLSTMBuilder
 {
     const BiLSTMSettings settings;
     dynet::ParameterCollection local_pc;
@@ -34,7 +33,7 @@ struct BiLSTMBuilder : public Builder
 
     BiLSTMBuilder(dynet::ParameterCollection& pc, const BiLSTMSettings& settings, unsigned input_dim);
 
-    void new_graph(dynet::ComputationGraph &cg, bool update = true);
+    void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
     std::vector<dynet::Expression> operator()(const std::vector<dynet::Expression>& embeddings);
 
     unsigned output_rows() const;

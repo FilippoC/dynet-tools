@@ -29,10 +29,11 @@ WordEmbeddingsBuilder::WordEmbeddingsBuilder(dynet::ParameterCollection& pc, con
         ;
 }
 
-void WordEmbeddingsBuilder::new_graph(dynet:: ComputationGraph& cg, bool update)
+void WordEmbeddingsBuilder::new_graph(dynet:: ComputationGraph& cg, bool training, bool update)
 {
     _cg = &cg;
     _update = update;
+    _is_training = training;
 }
 
 dynet::Expression WordEmbeddingsBuilder::get(const std::string& str)

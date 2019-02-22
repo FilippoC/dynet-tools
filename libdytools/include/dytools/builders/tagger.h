@@ -3,7 +3,6 @@
 #include <memory>
 #include "dytools/dict.h"
 #include "dynet/cfsm-builder.h"
-#include "dytools/builders/builder.h"
 
 namespace dytools
 {
@@ -24,7 +23,7 @@ struct TaggerSettings
     }
 };
 
-struct TaggerBuilder : public Builder
+struct TaggerBuilder
 {
     const TaggerSettings settings;
     dynet::ParameterCollection local_pc;
@@ -37,7 +36,7 @@ struct TaggerBuilder : public Builder
     dynet::ComputationGraph* _cg;
 
     TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSettings& settings, std::shared_ptr<dytools::Dict> dict, unsigned dim_input);
-    void new_graph(dynet::ComputationGraph& cg, bool update = true);
+    void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
 
     dynet::Expression full_logits(const dynet::Expression &input);
     dynet::Expression neg_log_softmax(const dynet::Expression& input, unsigned index);

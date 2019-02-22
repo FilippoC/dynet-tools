@@ -24,7 +24,60 @@ struct TrainingSettings
     bool save_at_each_epoch = false;
 };
 
-template <class Network, class DataType, class Evaluator>
+template <class Network, class DataType>
+struct DynamicGraphEpoch
+{
+    std::shared_ptr<Network> network;
+    dynet::Trainer& trainer;
+
+    DynamicGraphEpoch(std::shared_ptr<Network> _network, dynet::Trainer& _trainer);
+
+    virtual dynet::Expression labeled_loss(const DataType &data);
+    virtual dynet::Expression unlabeled_loss(const DataType &data);
+
+    virtual float forward_backward(
+            dynet::ComputationGraph& cg,
+            typename std::vector<DataType>::const_iterator begin_labelled_data,
+            typename std::vector<DataType>::const_iterator end_labelled_data,
+            typename std::vector<DataType>::const_iterator begin_unlabelled_data,
+            typename std::vector<DataType>::const_iterator end_unlabelled_data
+    );
+
+    float optimize(
+            std::vector<DataType> &labeled_data,
+            std::vector<DataType> &unlabeled_data,
+            const unsigned n_updates_per_epoch,
+            const unsigned batch_size
+    );
+};
+
+
+template <class Network, class DataType>
+struct StaticGraphEpoch
+{
+    std::shared_ptr<Network> network;
+    dynet::Trainer &trainer;
+
+    StaticGraphEpoch(std::shared_ptr<Network> _network, dynet::Trainer &_trainer);
+
+    virtual float forward_backward(
+            dynet::ComputationGraph& cg,
+            typename std::vector<DataType>::const_iterator begin_labelled_data,
+            typename std::vector<DataType>::const_iterator end_labelled_data,
+            typename std::vector<DataType>::const_iterator begin_unlabelled_data,
+            typename std::vector<DataType>::const_iterator end_unlabelled_data
+    );
+
+    float optimize(
+            std::vector<DataType> &labeled_data,
+            std::vector<DataType> &unlabeled_data,
+            const unsigned n_updates_per_epoch,
+            const unsigned batch_size
+    );
+};
+
+
+    template <class Network, class DataType, class Evaluator, class Epoch = DynamicGraphEpoch<Network, DataType>>
 struct Training
 {
     const TrainingSettings settings;
@@ -51,25 +104,14 @@ struct Training
             const std::vector<DataType> &dev_data
             );
 
-    virtual dynet::Expression labeled_loss(const DataType &data);
-    virtual dynet::Expression unlabeled_loss(const DataType &data);
-
     virtual float evaluate(const std::vector<DataType>& data);
-
-    virtual float forward_backward(
-            dynet::ComputationGraph& cg,
-            typename std::vector<DataType>::const_iterator begin_labelled_data,
-            typename std::vector<DataType>::const_iterator end_labelled_data,
-            typename std::vector<DataType>::const_iterator begin_unlabelled_data,
-            typename std::vector<DataType>::const_iterator end_unlabelled_data
-    );
 
     virtual void save();
     virtual void save(const std::string& path);
     virtual void load();
     virtual void load(const std::string& path);
 
-protected:
+public: // move to protect
     virtual void training_settings(const std::string& mode);
     virtual void optimize(
             dynet::Trainer &trainer,

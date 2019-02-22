@@ -7,7 +7,6 @@
 
 #include "dytools/dict.h"
 #include "dytools/builders/bilstm.h"
-#include "dytools/builders/builder.h"
 
 namespace dytools
 {
@@ -27,7 +26,7 @@ struct CharacterEmbeddingsSettings
     unsigned int output_rows() const;
 };
 
-struct CharacterEmbeddingsBuilder : public Builder
+struct CharacterEmbeddingsBuilder
 {
     const CharacterEmbeddingsSettings settings;
     dynet::ParameterCollection local_pc;
@@ -38,11 +37,11 @@ struct CharacterEmbeddingsBuilder : public Builder
 
     dynet::ComputationGraph* _cg;
     bool _update = true;
+    bool _is_training = true;
 
     CharacterEmbeddingsBuilder(dynet::ParameterCollection& pc, const CharacterEmbeddingsSettings& settings, std::shared_ptr<dytools::Dict> dict);
 
-    void new_graph(dynet::ComputationGraph& cg, bool update=true);
-    void set_is_training(bool value) override;
+    void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
 
     dynet::Expression get_char_embedding(const std::string& c);
 

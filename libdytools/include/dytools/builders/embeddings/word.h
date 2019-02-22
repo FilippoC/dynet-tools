@@ -1,7 +1,6 @@
 #pragma once
 
 #include "dynet/expr.h"
-#include "dytools/builders/builder.h"
 #include "dytools/dict.h"
 
 namespace dytools
@@ -20,7 +19,7 @@ struct WordEmbeddingsSettings
     unsigned int output_rows() const;
 };
 
-struct WordEmbeddingsBuilder : public Builder
+struct WordEmbeddingsBuilder
 {
     const WordEmbeddingsSettings settings;
     dynet::ParameterCollection local_pc;
@@ -29,10 +28,11 @@ struct WordEmbeddingsBuilder : public Builder
     dynet::LookupParameter lp;
     dynet::ComputationGraph* _cg;
     bool _update = true;
+    bool _is_training = true;
 
     WordEmbeddingsBuilder(dynet::ParameterCollection& pc, const WordEmbeddingsSettings& settings, std::shared_ptr<dytools::Dict> dict);
 
-    void new_graph(dynet::ComputationGraph& cg, bool update=true);
+    void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
 
     dynet::Expression get(const std::string& str);
     dynet::Expression get(const unsigned idx);

@@ -35,8 +35,7 @@ struct DependencyNetwork : public BaseDependencyNetwork
             std::shared_ptr<dytools::Dict> tagger_dict,
             std::shared_ptr<dytools::Dict> label_dict
             );
-    void new_graph(dynet::ComputationGraph& cg, bool update = true);
-    void set_is_training(bool value) override;
+    void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
 
     unsigned get_embeddings_size() const override;
     std::vector<dynet::Expression> get_embeddings(const ConllSentence &sentence) override;

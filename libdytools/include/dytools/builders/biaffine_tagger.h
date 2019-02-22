@@ -4,7 +4,6 @@
 
 #include "dynet/expr.h"
 #include "dytools/dict.h"
-#include "dytools/builders/builder.h"
 
 namespace dytools
 {
@@ -24,7 +23,7 @@ struct BiAffineTaggerSettings
 
 
 
-struct BiAffineTaggerBuilder : public Builder
+struct BiAffineTaggerBuilder
 {
     const BiAffineTaggerSettings settings;
     dynet::ParameterCollection local_pc;
@@ -48,7 +47,7 @@ struct BiAffineTaggerBuilder : public Builder
             bool root_prefix = true
     );
 
-    void new_graph(dynet::ComputationGraph &cg, bool update = true);
+    void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
     dynet::Expression dependency_tagger(const std::vector<dynet::Expression>& input, const std::vector<unsigned>& heads);
 
 protected:

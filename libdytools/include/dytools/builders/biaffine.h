@@ -1,7 +1,6 @@
 #pragma once
 
 #include "dynet/expr.h"
-#include "dytools/builders/builder.h"
 
 namespace dytools
 {
@@ -21,7 +20,7 @@ struct BiAffineSettings
 
 
 
-struct BiAffineBuilder : public Builder
+struct BiAffineBuilder
 {
     const BiAffineSettings settings;
     dynet::ParameterCollection local_pc;
@@ -38,7 +37,7 @@ struct BiAffineBuilder : public Builder
 
     BiAffineBuilder(dynet::ParameterCollection& pc, const BiAffineSettings& settings, unsigned dim, bool root_prefix = true);
 
-    void new_graph(dynet::ComputationGraph &cg, bool update = true);
+    void new_graph(dynet::ComputationGraph &cg, bool training, bool updates);
     dynet::Expression operator()(const dynet::Expression& input, bool check_prefix = true);
     dynet::Expression operator()(const std::vector<dynet::Expression>& input);
 

@@ -45,7 +45,7 @@ unsigned BiLSTMBuilder::output_rows() const
     return settings.output_rows(input_dim);
 }
 
-void BiLSTMBuilder::new_graph(dynet::ComputationGraph &cg, bool update)
+void BiLSTMBuilder::new_graph(dynet::ComputationGraph &cg, bool, bool update)
 {
     for (unsigned stack = 0; stack < settings.stacks; ++stack)
     {
