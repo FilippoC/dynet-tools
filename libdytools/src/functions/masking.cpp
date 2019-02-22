@@ -15,15 +15,13 @@ dynet::Expression main_diagonal_mask(dynet::ComputationGraph& cg, const dynet::D
 
     const unsigned rows = dim.rows();
     const unsigned cols = dim.cols();
-    if (cols != rows)
-        throw std::runtime_error("Debug: square matrix only");
     const unsigned n_elems = (cols < rows ? cols : rows);
 
     std::vector<unsigned> indices;
     for (unsigned i = 0 ; i < n_elems ; ++i)
         indices.push_back(i + i * rows);
 
-    std::vector<float> values(n_elems, -std::numeric_limits<float>::infinity());
+    std::vector<float> values(n_elems, value);
 
     return dynet::input(cg, dim, indices, values);
 }

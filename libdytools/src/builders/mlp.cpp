@@ -29,13 +29,11 @@ void MLPBuilder::new_graph(dynet::ComputationGraph& cg, bool training, bool upda
     {
         if (update)
         {
-            std::cerr << "NEW P\n";
             e_W.at(i) = dynet::parameter(cg, p_W.at(i));
             e_bias.at(i) = dynet::parameter(cg, p_bias.at(i));
         }
         else
         {
-            std::cerr << "NEW P const\n";
             e_W.at(i) = dynet::const_parameter(cg, p_W.at(i));
             e_bias.at(i) = dynet::const_parameter(cg, p_bias.at(i));
         }
@@ -58,7 +56,7 @@ dynet::Expression MLPBuilder::apply(const dynet::Expression &input)
             if (_training)
                 proj = dynet::dropout(proj, dropout_rate);
             else
-                // because of dynet bug
+                // because of dynet bug on CPU
                 proj = dynet::dropout(proj, 0.f);
 
         }
