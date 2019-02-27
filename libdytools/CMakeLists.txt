@@ -31,6 +31,7 @@ add_library(
 
         src/functions/root_arborescence_marginals.cpp
         src/functions/masking.cpp
+        src/functions/position_encoding.cpp
 )
 
 FIND_PACKAGE(Boost COMPONENTS regex serialization filesystem REQUIRED)
