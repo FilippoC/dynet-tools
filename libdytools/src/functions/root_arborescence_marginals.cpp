@@ -60,7 +60,26 @@ dynet::Expression rooted_arborescence_marginals(dynet::ComputationGraph& cg, con
     const auto laplacian = col_sum_as_diag - exp_weights;
     const auto laplacian2 = root_weight + dynet::cmult(laplacian, mask_first_row);
 
-    const auto inv_laplacian = dytools::force_cpu(dynet::inverse, laplacian2); // op not available on GPU
+    // the inverse operation does not support GPU neither minibatches
+    dynet::Expression inv_laplacian;
+    if (laplacian2.dim().batch_elems() == 1)
+    {
+        inv_laplacian = dytools::force_cpu(dynet::inverse, laplacian2); // op not available on GPU
+    }
+    else
+    {
+        std::vector<dynet::Expression> all_inv_laplacian;
+        all_inv_laplacian.reserve(laplacian2.dim().batch_elems());
+        for (unsigned b = 0 ; b < laplacian2.dim().batch_elems() ; ++b)
+        {
+            all_inv_laplacian.push_back(
+                    dytools::force_cpu(dynet::inverse, dynet::pick_batch_elem(laplacian2, b))
+            );
+        }
+        inv_laplacian = dynet::concatenate_to_batch(all_inv_laplacian);
+    }
+
+
     const auto inv_laplacian_diag = dynet::cmult(inv_laplacian, mask_diagonal);
 
     const auto output1 = dynet::cmult(
