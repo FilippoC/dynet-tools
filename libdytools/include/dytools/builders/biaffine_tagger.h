@@ -1,9 +1,7 @@
 #pragma once
 
 #include <memory>
-
 #include "dynet/expr.h"
-#include "dytools/dict.h"
 
 namespace dytools
 {
@@ -26,8 +24,8 @@ struct BiAffineTaggerSettings
 struct BiAffineTaggerBuilder
 {
     const BiAffineTaggerSettings settings;
+    const unsigned n_labels;
     dynet::ParameterCollection local_pc;
-    std::shared_ptr<dytools::Dict> dict;
 
     dynet::Parameter p_head_proj_W, p_head_proj_bias, p_mod_proj_W, p_mod_proj_bias;
     dynet::Parameter p_biaffine_head_mod, p_biaffine_bias, p_biaffine_label_bias;
@@ -43,7 +41,7 @@ struct BiAffineTaggerBuilder
             dynet::ParameterCollection& pc,
             const BiAffineTaggerSettings& settings,
             unsigned dim,
-            std::shared_ptr<dytools::Dict> dict,
+            const unsigned size,
             bool root_prefix = true
     );
 

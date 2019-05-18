@@ -5,15 +5,13 @@
 namespace dytools
 {
 
-TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSettings& settings, std::shared_ptr<dytools::Dict> dict, unsigned dim_input) :
+TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSettings& settings, unsigned size, unsigned dim_input) :
     settings(settings),
     local_pc(pc.add_subcollection("tagger")),
-    dict(dict),
     p_W(settings.layers), p_bias(settings.layers),
     e_W(settings.layers), e_bias(settings.layers),
-    builder((settings.layers == 0 ? dim_input : settings.dim), dict->size(), local_pc, settings.output_bias)
+    builder((settings.layers == 0 ? dim_input : settings.dim), size, local_pc, settings.output_bias)
 {
-    const int zero = 0;
     for (unsigned i = 0 ; i < settings.layers ; ++i)
     {
         p_W.at(i) = local_pc.add_parameters({settings.dim, dim_input});
@@ -23,16 +21,8 @@ TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSetting
     std::cerr
         << "Tagger\n"
         << " layer / dim: " << settings.layers << " / " << settings.dim << "\n"
-        << " num classes: " << dict->size() << "\n"
+        << " num classes: " << size << "\n"
         ;
-
-    if (dict->size() < 50)
-    {
-        std::cerr << " classes: " << dict->convert(zero);
-        for (auto i = 0u; i < dict->size(); ++i)
-            std::cerr << "\t" << dict->convert(i);
-        std::cerr << "\n\n";
-    }
 }
 
 void TaggerBuilder::new_graph(dynet::ComputationGraph& cg, bool, bool update)
@@ -70,24 +60,13 @@ dynet::Expression TaggerBuilder::neg_log_softmax(const dynet::Expression& input,
 }
 
 
-
-dynet::Expression TaggerBuilder::neg_log_softmax(const dynet::Expression& input, const std::vector<std::string>& words)
-{
-    std::vector<unsigned> indices;
-    indices.reserve(words.size());
-    for (auto const& w : words)
-        indices.push_back(dict->convert(w));
-
-    return neg_log_softmax(input, indices);
-}
-
 dynet::Expression TaggerBuilder::neg_log_softmax(const dynet::Expression& input, const std::vector<unsigned>& indices)
 {
     const auto repr = full_logits(input);
     return dynet::pickneglogsoftmax(repr, indices);
 }
 
-dynet::Expression TaggerBuilder::masked_neg_log_softmax(const dynet::Expression& input, const std::vector<std::string>& words, unsigned* c, bool skip_first)
+dynet::Expression TaggerBuilder::masked_neg_log_softmax(const dynet::Expression& input, const std::vector<int>& words, unsigned* c, bool skip_first)
 {
     std::vector<unsigned> indices;
     std::vector<float> v_mask;
@@ -102,11 +81,11 @@ dynet::Expression TaggerBuilder::masked_neg_log_softmax(const dynet::Expression&
     }
 
     unsigned counter = 0u;
-    for (auto const& w : words)
+    for (const int w : words)
     {
-        if (dict->contains(w))
+        if (w >= 0)
         {
-            indices.push_back(dict->convert(w));
+            indices.push_back((unsigned) w);
             v_mask.push_back(1.f);
             ++counter;
         }

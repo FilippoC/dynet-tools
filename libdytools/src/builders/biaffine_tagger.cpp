@@ -9,15 +9,14 @@ BiAffineTaggerBuilder::BiAffineTaggerBuilder(
         dynet::ParameterCollection& pc,
         const BiAffineTaggerSettings& settings,
         unsigned dim,
-        std::shared_ptr<dytools::Dict> dict,
+        const unsigned size,
         bool root_prefix
 ) :
     settings(settings),
+    n_labels(size),
     local_pc(pc.add_subcollection("biaffinetagger")),
-    dict(dict),
     root_prefix(root_prefix)
 {
-    const auto n_labels = dict->size();
 
     p_head_proj_W = local_pc.add_parameters({settings.proj_size, dim});
     p_head_proj_bias = local_pc.add_parameters({settings.proj_size}, dynet::ParameterInitConst(0.f));
@@ -41,16 +40,7 @@ BiAffineTaggerBuilder::BiAffineTaggerBuilder(
             << " bias: " << (settings.bias ? "yes" : "no") << "\n"
             << " label bias: " << (settings.bias ? "yes" : "no") << "\n"
             << " root prefix: " << (root_prefix ? "yes" : "no") << "\n"
-            << " n labels: " << dict->size() << "\n";
-
-    if (dict->size() < 50)
-    {
-        std::cerr << " classes: " << dict->convert((unsigned) 0u);
-        for (auto i = 0u; i < dict->size(); ++i)
-            std::cerr << "\t" << dict->convert(i);
-        std::cerr << "\n\n";
-    }
-
+            << " n labels: " << size << "\n";
     std::cerr << "\n";
 }
 
@@ -120,7 +110,7 @@ dynet::Expression BiAffineTaggerBuilder::dependency_tagger(const std::vector<dyn
     const auto e_mod = dynet::rectify(e_mod_proj_W * mod_input + e_mod_proj_bias);
 
     auto weights = e_biaffine_head_mod * e_mod;
-    weights = dynet::reshape(weights, dynet::Dim({settings.proj_size, dict->size()}, weights.dim().batch_elems()));
+    weights = dynet::reshape(weights, dynet::Dim({settings.proj_size, n_labels}, weights.dim().batch_elems()));
     weights = dynet::transpose(e_head) * weights;
     weights = dynet::transpose(weights);
 

@@ -6,124 +6,74 @@
 namespace dytools
 {
 
-
-Dict::Dict()
-{}
-
-
-Dict::Dict(const DictSettings& settings) :
-        settings(settings)
+Dict::Dict(bool _lowercase, bool _has_num, bool _has_unk) :
+    has_unk(_has_unk),
+    has_num(_has_num),
+    lowercase(_lowercase)
 {
-    if (has_unk())
-        convert(settings.unk_word);
-    if (has_num())
-        convert(settings.num_word);
-}
+    if (has_unk)
+    {
+        unk_id = (unsigned) id_to_word.size();
+        id_to_word.push_back(unk_str);
+        word_to_id.emplace(std::make_pair(unk_str, unk_id));
+    }
 
-bool Dict::has_unk() const
-{
-    return settings.unk_word.size() > 0;
-}
-
-bool Dict::has_num() const
-{
-    return settings.unk_word.size() > 0;
-}
-
-unsigned Dict::size() const
-{
-    return id_to_word.size();
-}
-
-bool Dict::contains(const std::string& _word) const
-{
-    const auto word = normalize(_word);
-    return !(word_to_id.find(word) == word_to_id.end());
-}
-
-void Dict::freeze()
-{
-    frozen = true;
-}
-
-bool Dict::is_frozen() const
-{
-    return frozen;
+    if (_has_num)
+    {
+        num_id = (unsigned) id_to_word.size();
+        id_to_word.push_back(num_str);
+        word_to_id.emplace(std::make_pair(num_str, num_id));
+    }
 }
 
 std::string Dict::normalize(const std::string& word) const
 {
-    if (has_num() && is_num(word))
-        return settings.num_word;
-    else if (settings.lowercase)
+    if (has_num && is_num(word))
+        return num_str;
+    else if (lowercase)
         return to_lower(word);
     else
         return word;
 }
 
-bool Dict::is_special(const std::string& word) const
+unsigned Dict::to_id(const std::string& _word) const
 {
-    const auto w = normalize(word);
-    return w == settings.unk_word || w == settings.num_word;
-}
-
-unsigned Dict::convert(const std::string& _word)
-{
-    // normalize word
     const auto word = normalize(_word);
 
     auto it = word_to_id.find(word);
     if (it == word_to_id.end())
     {
-        if (frozen)
-        {
-            if (has_unk())
-                return word_to_id[settings.unk_word];
-            else
-                std::runtime_error("Unknown word encountered in frozen dictionary");
-        }
-        const auto id = id_to_word.size();
-        word_to_id[word] = id;
-        id_to_word.push_back(word);
-
-        return id;
+        if (has_unk)
+            return unk_id;
+        else
+            throw std::runtime_error("Word not in dict");
     }
     else
-    {
         return it->second;
-    }
 }
 
-const std::string& Dict::convert(const unsigned id) const
+std::string Dict::to_string(const unsigned id) const
 {
-    if (id > id_to_word.size())
-        throw std::runtime_error("id too big: not in dict!");
-    return id_to_word[id];
+    return id_to_word.at(id);
 }
 
-
-void Dict::clear()
+void Dict::add(const std::string& _word)
 {
-    word_to_id.clear();
-    id_to_word.clear();
-}
+    const auto word = normalize(_word);
 
-std::shared_ptr<Dict> read_dict_from_file(const DictSettings& settings, const std::string &path)
-{
-    std::shared_ptr<Dict> dict(new Dict(settings));
-
-    std::ifstream fin(path);
-    if (!fin.is_open())
-        throw std::runtime_error("Could not open embeddings file");
-
-    std::string s;
-    while(getline(fin, s))
+    auto it = word_to_id.find(word);
+    if (it == word_to_id.end())
     {
-        boost::algorithm::trim(s);
-        dict->convert(s);
+        const unsigned id = (unsigned) word_to_id.size();
+        id_to_word.push_back(word);
+        word_to_id.emplace(std::make_pair(word, id));
     }
-
-    return dict;
 }
+
+unsigned Dict::size() const
+{
+    return (unsigned) id_to_word.size();
+}
+
 
 }

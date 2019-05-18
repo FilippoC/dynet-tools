@@ -5,6 +5,7 @@ add_library(
         src/dict.cpp
         src/utils.cpp
         src/masked_sequence.cpp
+        src/sampler.cpp
 
         src/algorithms/dependency-parser.cpp
         src/algorithms/span-parser.cpp
@@ -21,11 +22,12 @@ add_library(
         src/builders/mlp.cpp
         src/builders/masked_lstm.cpp
         src/builders/masked_bilstm.cpp
+        src/builders/parser.cpp
 
-        src/data/conll.cpp
+        #src/data/conll.cpp
 
-        src/networks/dependency.cpp
-        src/networks/base-dependency.cpp
+        #src/networks/parser.cpp
+        #src/networks/base-dependency.cpp
 
         src/loss/dependency.cpp
 
