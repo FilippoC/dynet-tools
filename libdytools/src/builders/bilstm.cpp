@@ -45,13 +45,24 @@ unsigned BiLSTMBuilder::output_rows() const
     return settings.output_rows(input_dim);
 }
 
-void BiLSTMBuilder::new_graph(dynet::ComputationGraph &cg, bool, bool update)
+void BiLSTMBuilder::new_graph(dynet::ComputationGraph &cg, bool train, bool update)
 {
     for (unsigned stack = 0; stack < settings.stacks; ++stack)
     {
         builders.at(stack).first.new_graph(cg, update);
         builders.at(stack).second.new_graph(cg, update);
+
+        if (train)
+        {
+            builders.at(stack).first.set_dropout(dropout);
+            builders.at(stack).second.set_dropout(dropout);
+        }
     }
+}
+
+void BiLSTMBuilder::set_dropout(float value)
+{
+    dropout = value;
 }
 
 std::vector<dynet::Expression> BiLSTMBuilder::operator()(const std::vector<dynet::Expression>& embeddings)
@@ -61,6 +72,7 @@ std::vector<dynet::Expression> BiLSTMBuilder::operator()(const std::vector<dynet
 
     std::vector<dynet::Expression> e_forward(embeddings.size());
     std::vector<dynet::Expression> e_backward(embeddings.size());
+
     for (unsigned stack = 0; stack < settings.stacks; ++stack)
     {
         builders.at(stack).first.start_new_sequence();

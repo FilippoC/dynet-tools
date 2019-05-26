@@ -9,7 +9,6 @@
 #include <boost/serialization/unordered_map.hpp>
 
 #include "dytools/utils.h"
-#include "dynet/dict.h"
 
 namespace dytools
 {
@@ -38,7 +37,18 @@ struct Dict
     void add(const std::string& _word);
 
     unsigned size() const;
-};
 
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int)
+    {
+        ar & has_unk;
+        ar & has_num;
+        ar & lowercase;
+        ar & unk_id;
+        ar & num_id;
+        ar & id_to_word;
+        ar & word_to_id;
+    }
+};
 
 }

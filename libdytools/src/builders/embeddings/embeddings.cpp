@@ -7,11 +7,6 @@ namespace dytools
 
 unsigned EmbeddingsSettings::output_rows() const
 {
-    std::cerr
-            << "use_token_embeddings: " << (use_token_embeddings ? "yes" : "no") << "\n"
-            << "use_char_embeddings: " << (use_char_embeddings ? "yes" : "no") << "\n"
-            << "token dim:" << (use_token_embeddings ? token_embeddings.output_rows() : 0u) << "\n"
-            << "char dim: " << (use_char_embeddings ? char_embeddings.output_rows() : 0u) << "\n";
     return
             (use_token_embeddings ? token_embeddings.output_rows() : 0u)
             +
@@ -30,17 +25,17 @@ EmbeddingsBuilder::EmbeddingsBuilder(
     if (!settings.use_char_embeddings and !settings.use_token_embeddings)
         throw std::runtime_error("Embeddings: you should use at least one of them.");
 
+    std::cerr
+            << "Embeddings\n"
+            << " use token embeddings: " << (settings.use_token_embeddings ? "yes" : "no") << "\n"
+            << " use char embeddings: " << (settings.use_char_embeddings ? "yes" : "no") << "\n"
+            << "\n"
+            ;
+
     if (settings.use_token_embeddings)
         token_embeddings.reset(new WordEmbeddingsBuilder(local_pc, settings.token_embeddings, n_token));
     if (settings.use_char_embeddings)
         char_embeddings.reset(new CharacterEmbeddingsBuilder(local_pc, settings.char_embeddings, n_char));
-
-    std::cerr
-        << "Embeddings\n"
-        << " use token embeddings: " << (settings.use_token_embeddings ? "yes" : "no") << "\n"
-        << " use char embeddings: " << (settings.use_char_embeddings ? "yes" : "no") << "\n"
-        << "\n"
-        ;
 }
 
 unsigned EmbeddingsBuilder::output_rows() const

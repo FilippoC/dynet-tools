@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include "dytools/builders/mlp.h"
 #include "dynet/cfsm-builder.h"
 
 namespace dytools
@@ -9,16 +10,13 @@ namespace dytools
 struct TaggerSettings
 {
     bool output_bias = false;
-
-    unsigned layers = 1u;
-    unsigned dim = 128u;
+    MLPSettings mlp;
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int)
     {
         ar & output_bias;
-        ar & layers;
-        ar & dim;
+        ar & mlp;
     }
 };
 
@@ -27,14 +25,13 @@ struct TaggerBuilder
     const TaggerSettings settings;
     dynet::ParameterCollection local_pc;
 
-    std::vector<dynet::Parameter> p_W, p_bias;
-    std::vector<dynet::Expression> e_W, e_bias;
-
+    MLPBuilder mlp;
     dynet::StandardSoftmaxBuilder builder;
     dynet::ComputationGraph* _cg;
 
     TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSettings& settings, unsigned size, unsigned dim_input);
     void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
+    void set_dropout(float value);
 
     dynet::Expression full_logits(const dynet::Expression &input);
     dynet::Expression neg_log_softmax(const dynet::Expression& input, unsigned index);

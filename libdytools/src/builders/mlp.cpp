@@ -55,9 +55,9 @@ dynet::Expression MLPBuilder::apply(const dynet::Expression &input)
         {
             if (_training)
                 proj = dynet::dropout(proj, dropout_rate);
-            else
+            //else
                 // because of dynet bug on CPU
-                proj = dynet::dropout(proj, 0.f);
+            //    proj = dynet::dropout(proj, 0.f);
 
         }
         last = dytools::activation(proj, settings.activation);

@@ -8,48 +8,30 @@ namespace dytools
 TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSettings& settings, unsigned size, unsigned dim_input) :
     settings(settings),
     local_pc(pc.add_subcollection("tagger")),
-    p_W(settings.layers), p_bias(settings.layers),
-    e_W(settings.layers), e_bias(settings.layers),
-    builder((settings.layers == 0 ? dim_input : settings.dim), size, local_pc, settings.output_bias)
+    mlp(local_pc, settings.mlp, dim_input),
+    builder(mlp.output_rows(), size, local_pc, settings.output_bias)
 {
-    for (unsigned i = 0 ; i < settings.layers ; ++i)
-    {
-        p_W.at(i) = local_pc.add_parameters({settings.dim, dim_input});
-        p_bias.at(i) = local_pc.add_parameters({settings.dim}, dynet::ParameterInitConst(0.f));
-    }
-
     std::cerr
         << "Tagger\n"
-        << " layer / dim: " << settings.layers << " / " << settings.dim << "\n"
         << " num classes: " << size << "\n"
         ;
 }
 
-void TaggerBuilder::new_graph(dynet::ComputationGraph& cg, bool, bool update)
+void TaggerBuilder::new_graph(dynet::ComputationGraph& cg, bool train, bool update)
 {
     _cg = &cg;
+    mlp.new_graph(cg, train, update);
     builder.new_graph(cg, update);
-    for (unsigned i = 0 ; i < settings.layers ; ++i)
-    {
-        if (update)
-        {
-            e_W.at(i) = dynet::parameter(cg, p_W.at(i));
-            e_bias.at(i) = dynet::parameter(cg, p_bias.at(i));
-        }
-        else
-        {
-            e_W.at(i) = dynet::const_parameter(cg, p_W.at(i));
-            e_bias.at(i) = dynet::const_parameter(cg, p_bias.at(i));
-        }
-    }
+}
+
+void TaggerBuilder::set_dropout(float value)
+{
+    mlp.set_dropout(value);
 }
 
 dynet::Expression TaggerBuilder::full_logits(const dynet::Expression &input)
 {
-    auto repr = input;
-    for (unsigned i = 0 ; i < settings.layers ; ++i)
-        repr = dynet::tanh(e_W.at(i) * repr + e_bias.at(i));
-
+    auto repr = mlp.apply(input);
     return builder.full_logits(repr);
 }
 

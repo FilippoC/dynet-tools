@@ -47,7 +47,7 @@ dynet::Expression CharacterEmbeddingsBuilder::get(const std::vector<unsigned>& s
     std::vector<dynet::Expression> input;
     for (unsigned i = 0u; i < str.size(); ++i)
     {
-        const unsigned c = str[i];
+        const unsigned c = str.at(i);
         input.push_back(get(c));
     }
 

@@ -38,15 +38,23 @@ struct ParserBuilder
     dynet::Expression e_proj_head, e_proj_mod, e_proj_bias;
     dynet::Expression e_output;
 
+    const bool has_bias;
+    std::unique_ptr<MLPBuilder> output_mlp_bias;
+    dynet::Parameter p_output_bias;
+    dynet::Expression e_output_bias;
+
     ParserBuilder(
             dynet::ParameterCollection& pc,
             const ParserSettings& settings,
             const unsigned dim,
             const unsigned output_dim=1,
-            bool root_prefix = true
+            bool root_prefix = true,
+            bool bias = false
     );
 
     void new_graph(dynet::ComputationGraph &cg, bool training, bool updates);
+    void set_dropout(float value);
+
     dynet::Expression operator()(const dynet::Expression& input);
     dynet::Expression operator()(const dynet::Expression& head_input, const dynet::Expression& mod_input);
 };

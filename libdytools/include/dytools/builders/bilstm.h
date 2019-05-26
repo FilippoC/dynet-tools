@@ -28,6 +28,7 @@ struct BiLSTMBuilder
     const BiLSTMSettings settings;
     dynet::ParameterCollection local_pc;
     const unsigned input_dim;
+    float dropout = 0.f;
 
     std::vector<std::pair<dynet::VanillaLSTMBuilder, dynet::VanillaLSTMBuilder>> builders;
 
@@ -35,6 +36,7 @@ struct BiLSTMBuilder
 
     void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
     std::vector<dynet::Expression> operator()(const std::vector<dynet::Expression>& embeddings);
+    void set_dropout(float value);
 
     unsigned output_rows() const;
 };
