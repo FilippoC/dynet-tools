@@ -24,7 +24,7 @@ unsigned Sampler::next()
 
     const unsigned ret = next_id;
     ++next_id;
-    return ret;
+    return indices.at(ret);
 }
 
 }
