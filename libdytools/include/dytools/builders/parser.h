@@ -19,6 +19,7 @@ struct ParserSettings
         ar & proj_dim;
         ar & input_mlp;
         ar & output_mlp;
+        ar & unlabeled_bias;
     }
 };
 
