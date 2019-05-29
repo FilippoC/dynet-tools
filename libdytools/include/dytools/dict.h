@@ -32,9 +32,11 @@ struct Dict
 
     std::string normalize(const std::string& word) const;
     unsigned to_id(const std::string& _word) const;
+    unsigned to_id(const char& _char) const;
     std::string to_string(const unsigned id) const;
 
     void add(const std::string& _word);
+    void add(const char& _char);
 
     unsigned size() const;
 

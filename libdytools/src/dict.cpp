@@ -52,6 +52,11 @@ unsigned Dict::to_id(const std::string& _word) const
         return it->second;
 }
 
+unsigned Dict::to_id(const char& _char) const
+{
+    return to_id(std::string(1, _char));
+}
+
 std::string Dict::to_string(const unsigned id) const
 {
     return id_to_word.at(id);
@@ -68,6 +73,11 @@ void Dict::add(const std::string& _word)
         id_to_word.push_back(word);
         word_to_id.emplace(std::make_pair(word, id));
     }
+}
+
+void Dict::add(const char& _char)
+{
+    add(std::string(1, _char));
 }
 
 unsigned Dict::size() const
