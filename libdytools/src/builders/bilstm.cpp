@@ -11,6 +11,7 @@ unsigned int BiLSTMSettings::output_rows(const unsigned input_dim) const
         return 2 * dim;
 }
 
+
 BiLSTMBuilder::BiLSTMBuilder(dynet::ParameterCollection &pc, const BiLSTMSettings &settings, unsigned input_dim) :
         settings(settings),
         local_pc(pc.add_subcollection("bilstm")),
@@ -86,6 +87,24 @@ std::vector<dynet::Expression> BiLSTMBuilder::operator()(const std::vector<dynet
             ret.at(i) = dynet::concatenate({e_forward.at(i), e_backward.at(i)});
     }
     return ret;
+}
+
+dynet::Expression BiLSTMBuilder::endpoints(const std::vector<dynet::Expression> &embeddings)
+{
+    const unsigned size = embeddings.size();
+    if (builders.size() != 1u)
+        throw std::runtime_error("Endpoints can be used only if the number of stacks=1");
+
+    builders.at(0u).first.start_new_sequence();
+    builders.at(0u).second.start_new_sequence();
+    dynet::Expression f, b;
+
+    for (unsigned i = 0u ; i < size ; ++i)
+        f = builders.at(0u).first.add_input(embeddings.at(i));
+    for (int i = size - 1 ; i >= 0 ; --i)
+        b = builders.at(0u).second.add_input(embeddings.at(i));
+
+    return dynet::concatenate({f, b});
 }
 
 

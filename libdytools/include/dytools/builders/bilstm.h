@@ -36,6 +36,7 @@ struct BiLSTMBuilder
 
     void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
     std::vector<dynet::Expression> operator()(const std::vector<dynet::Expression>& embeddings);
+    dynet::Expression endpoints(const std::vector<dynet::Expression>& embeddings);
     void set_dropout(float value);
 
     unsigned output_rows() const;

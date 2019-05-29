@@ -7,7 +7,7 @@ namespace dytools
 
 unsigned int CharacterEmbeddingsSettings::output_rows() const
 {
-    return 2 * bilstm.output_rows(dim);
+    return bilstm.output_rows(dim);
 }
 
 CharacterEmbeddingsBuilder::CharacterEmbeddingsBuilder(dynet::ParameterCollection& pc, const CharacterEmbeddingsSettings& settings, const unsigned n_char) :
@@ -51,8 +51,7 @@ dynet::Expression CharacterEmbeddingsBuilder::get(const std::vector<unsigned>& s
         input.push_back(get(c));
     }
 
-    auto output = bilstm(input);
-    return dynet::concatenate({output.at(0u), output.back()});
+    return bilstm.endpoints(input);
 }
 
 std::vector<dynet::Expression> CharacterEmbeddingsBuilder::get_all_as_vector(const std::vector<std::vector<unsigned>>& words)
