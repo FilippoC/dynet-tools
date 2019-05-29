@@ -53,11 +53,11 @@ dynet::Expression MLPBuilder::apply(const dynet::Expression &input)
         //auto proj = dynet::affine_transform({e_bias[i], e_W[i], last});
         if (dropout_rate > 0.f)
         {
-            //if (_training)
-            //    proj = dynet::dropout(proj, dropout_rate);
-            //else
+            if (_training)
+                proj = dynet::dropout(proj, dropout_rate);
+            else
                 // because of dynet bug on CPU
-            //    proj = dynet::dropout(proj, 0.f);
+                proj = dynet::dropout(proj, 0.f);
 
         }
         last = dytools::activation(proj, settings.activation);

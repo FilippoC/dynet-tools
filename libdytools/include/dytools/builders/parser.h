@@ -11,6 +11,7 @@ struct ParserSettings
     unsigned proj_dim = 256;
     MLPSettings input_mlp;
     MLPSettings output_mlp;
+    bool unlabeled_bias = false;
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int)
@@ -48,8 +49,7 @@ struct ParserBuilder
             const ParserSettings& settings,
             const unsigned dim,
             const unsigned output_dim=1,
-            bool root_prefix = true,
-            bool bias = false
+            bool root_prefix = true
     );
 
     void new_graph(dynet::ComputationGraph &cg, bool training, bool updates);

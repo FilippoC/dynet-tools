@@ -9,19 +9,18 @@ ParserBuilder::ParserBuilder(
         const ParserSettings& settings,
         const unsigned dim,
         const unsigned output_dim,
-        const bool root_prefix,
-        bool bias
+        const bool root_prefix
 ) :
     settings(settings),
     local_pc(pc.add_subcollection("parser")),
     input_head_mlp(local_pc, settings.input_mlp, dim),
     input_mod_mlp(local_pc, settings.input_mlp, dim),
     output_mlp(local_pc, settings.output_mlp, settings.proj_dim),
-    has_bias(bias)
+    has_bias(settings.unlabeled_bias)
 {
     if (output_dim == 0)
         throw std::runtime_error("output_dim must be at least one");
-    if (output_dim == 1 && bias == true)
+    if (output_dim == 1 && has_bias == true)
         throw std::runtime_error("bias is useless when output is one");
 
     p_proj_head = local_pc.add_parameters({settings.proj_dim, input_head_mlp.output_rows()});
@@ -109,13 +108,11 @@ dynet::Expression ParserBuilder::operator()(const dynet::Expression& head_input,
 
     if (has_bias)
     {
-        /*
         auto output_bias_values = output_mlp_bias->apply(values);
         auto output_bias = e_output_bias * output_bias_values;
         output_bias = dynet::reshape(output_bias, {1u, n_words, n_words});
 
         output = output + output_bias;
-         */
     }
 
     return output;

@@ -40,6 +40,8 @@ struct Dict
 
     unsigned size() const;
 
+    void swap(Dict& other);
+
     template<class Archive>
     void serialize(Archive& ar, const unsigned int)
     {

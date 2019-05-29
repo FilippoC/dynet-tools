@@ -1,6 +1,7 @@
 #include "dytools/dict.h"
 
 #include <fstream>
+#include <utility>
 #include "boost/algorithm/string/trim.hpp"
 
 namespace dytools
@@ -85,5 +86,15 @@ unsigned Dict::size() const
     return (unsigned) id_to_word.size();
 }
 
+void Dict::swap(dytools::Dict &other)
+{
+    std::swap(has_unk, other.has_unk);
+    std::swap(has_num, other.has_num);
+    std::swap(lowercase, other.lowercase);
+    std::swap(unk_id, other.unk_id);
+    std::swap(num_id, other.num_id);
+    std::swap(id_to_word, other.id_to_word);
+    std::swap(word_to_id, other.word_to_id);
+}
 
 }
