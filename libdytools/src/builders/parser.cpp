@@ -97,6 +97,7 @@ dynet::Expression ParserBuilder::operator()(const dynet::Expression& head_input,
 
     // dim: (feats, n_words, n_words)
     auto values = head_proj + mod_proj;
+
     // dim: (feats, n_words * n_words)
     values = dynet::reshape(values, {dim_feats, n_words * n_words});
     values = dynet::rectify(values + e_proj_bias);
@@ -108,11 +109,13 @@ dynet::Expression ParserBuilder::operator()(const dynet::Expression& head_input,
 
     if (has_bias)
     {
+        /*
         auto output_bias_values = output_mlp_bias->apply(values);
         auto output_bias = e_output_bias * output_bias_values;
         output_bias = dynet::reshape(output_bias, {1u, n_words, n_words});
 
         output = output + output_bias;
+         */
     }
 
     return output;
