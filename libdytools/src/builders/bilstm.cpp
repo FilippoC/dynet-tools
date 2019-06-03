@@ -58,6 +58,11 @@ void BiLSTMBuilder::new_graph(dynet::ComputationGraph &cg, bool train, bool upda
             builders.at(stack).first.set_dropout(dropout);
             builders.at(stack).second.set_dropout(dropout);
         }
+        else
+        {
+            builders.at(stack).first.set_dropout(0.f);
+            builders.at(stack).second.set_dropout(0.f);
+        }
     }
 }
 
