@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "dynet/expr.h"
 #include "dytools/builders/mlp.h"
 
@@ -58,6 +60,15 @@ struct ParserBuilder
 
     dynet::Expression operator()(const dynet::Expression& input);
     dynet::Expression operator()(const dynet::Expression& head_input, const dynet::Expression& mod_input);
+
+    std::pair<dynet::Expression, dynet::Expression> disjoint(const dynet::Expression& input);
+    std::pair<dynet::Expression, dynet::Expression> disjoint(const dynet::Expression& head_input, const dynet::Expression& mod_input);
+
+protected:
+    dynet::Expression get_representation(const dynet::Expression& head_input, const dynet::Expression& mod_input);
+    dynet::Expression get_labeled_weights(const dynet::Expression& values, const unsigned n_words);
+    dynet::Expression get_unlabeled_weights(const dynet::Expression& values, const unsigned n_words);
+
 };
 
 

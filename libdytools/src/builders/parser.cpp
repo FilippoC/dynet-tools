@@ -82,6 +82,19 @@ dynet::Expression ParserBuilder::operator()(const dynet::Expression& input)
 
 dynet::Expression ParserBuilder::operator()(const dynet::Expression& head_input, const dynet::Expression& mod_input)
 {
+    const unsigned n_words = mod_input.dim().cols();
+
+    const auto repr = get_representation(head_input, mod_input);
+
+    if (has_bias)
+        return get_unlabeled_weights(repr, n_words) + get_labeled_weights(repr, n_words);
+    else
+        return get_labeled_weights(repr, n_words);
+}
+
+
+dynet::Expression ParserBuilder::get_representation(const dynet::Expression& head_input, const dynet::Expression& mod_input)
+{
     // input dim: (feats, n_words)
     const unsigned n_words = mod_input.dim().cols();
 
@@ -100,22 +113,47 @@ dynet::Expression ParserBuilder::operator()(const dynet::Expression& head_input,
     // dim: (feats, n_words * n_words)
     values = dynet::reshape(values, {dim_feats, n_words * n_words});
     values = dynet::rectify(values + e_proj_bias);
+
+    return values;
+}
+
+dynet::Expression ParserBuilder::get_labeled_weights(const dynet::Expression& values, const unsigned n_words)
+{
+
     auto output_values = output_mlp.apply(values);
 
     // dim: (output, n_words * n_words)
     auto output = e_output * output_values;
     output = dynet::reshape(output, {e_output.dim().rows(), n_words, n_words});
 
-    if (has_bias)
-    {
-        auto output_bias_values = output_mlp_bias->apply(values);
-        auto output_bias = e_output_bias * output_bias_values;
-        output_bias = dynet::reshape(output_bias, {1u, n_words, n_words});
-
-        output = output + output_bias;
-    }
-
     return output;
 }
+
+dynet::Expression ParserBuilder::get_unlabeled_weights(const dynet::Expression& values, const unsigned n_words)
+{
+
+    if (!has_bias)
+        throw std::runtime_error("Unlabaled bias is disabled");
+
+    auto output_bias_values = output_mlp_bias->apply(values);
+    auto output_bias = e_output_bias * output_bias_values;
+    output_bias = dynet::reshape(output_bias, {1u, n_words, n_words});
+
+    return output_bias;
+}
+
+std::pair<dynet::Expression, dynet::Expression> ParserBuilder::disjoint(const dynet::Expression& input)
+{
+    return disjoint(input, input);
+}
+
+std::pair<dynet::Expression, dynet::Expression> ParserBuilder::disjoint(const dynet::Expression& head_input, const dynet::Expression& mod_input)
+{
+    const unsigned n_words = mod_input.dim().cols();
+
+    const auto repr = get_representation(head_input, mod_input);
+    return {get_unlabeled_weights(repr, n_words), get_labeled_weights(repr, n_words)};
+}
+
 
 }
