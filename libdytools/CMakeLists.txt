@@ -6,6 +6,7 @@ add_library(
         src/utils.cpp
         src/masked_sequence.cpp
         src/sampler.cpp
+        src/dead_neurons_checker.cpp
 
         src/algorithms/dependency-parser.cpp
         src/algorithms/span-parser.cpp
