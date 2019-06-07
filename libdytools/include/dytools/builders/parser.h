@@ -14,6 +14,7 @@ struct ParserSettings
     MLPSettings input_mlp;
     MLPSettings output_mlp;
     bool unlabeled_bias = false;
+    bool label_bias = false;
 
     template<class Archive>
     void serialize(Archive& ar, const unsigned int)
@@ -22,6 +23,7 @@ struct ParserSettings
         ar & input_mlp;
         ar & output_mlp;
         ar & unlabeled_bias;
+        ar & label_bias;
     }
 };
 
@@ -37,10 +39,10 @@ struct ParserBuilder
     MLPBuilder output_mlp;
 
     dynet::Parameter p_proj_head, p_proj_mod, p_proj_bias;
-    dynet::Parameter p_output;
+    dynet::Parameter p_output, p_output_label_bias;
 
     dynet::Expression e_proj_head, e_proj_mod, e_proj_bias;
-    dynet::Expression e_output;
+    dynet::Expression e_output, e_output_label_bias;
 
     const bool has_bias;
     std::unique_ptr<MLPBuilder> output_mlp_bias;

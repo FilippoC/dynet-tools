@@ -22,12 +22,17 @@ ParserBuilder::ParserBuilder(
         throw std::runtime_error("output_dim must be at least one");
     if (output_dim == 1 && has_bias == true)
         throw std::runtime_error("bias is useless when output is one");
+    if (output_dim == 1 && settings.label_bias == true)
+        throw std::runtime_error("Label bias is useless when output is one");
 
     p_proj_head = local_pc.add_parameters({settings.proj_dim, input_head_mlp.output_rows()});
     p_proj_mod = local_pc.add_parameters({settings.proj_dim, input_head_mlp.output_rows()});
     p_proj_bias = local_pc.add_parameters({settings.proj_dim}, dynet::ParameterInitConst(0.f));
 
     p_output = local_pc.add_parameters({output_dim, output_mlp.output_rows()});
+
+    if (settings.label_bias)
+        p_output_label_bias = local_pc.add_parameters({output_dim}, dynet::ParameterInitConst(0.f));
 
     if (has_bias)
     {
@@ -54,6 +59,9 @@ void ParserBuilder::new_graph(dynet::ComputationGraph &cg, bool training, bool u
 
         if (has_bias)
             e_output_bias = dynet::parameter(cg, p_output_bias);
+
+        if (settings.label_bias)
+            e_output_label_bias = dynet::parameter(cg, p_output_label_bias);
     }
     else
     {
@@ -64,6 +72,9 @@ void ParserBuilder::new_graph(dynet::ComputationGraph &cg, bool training, bool u
 
         if (has_bias)
             e_output_bias = dynet::const_parameter(cg, p_output_bias);
+
+        if (settings.label_bias)
+            e_output_label_bias = dynet::const_parameter(cg, p_output_label_bias);
     }
 }
 
@@ -124,6 +135,8 @@ dynet::Expression ParserBuilder::get_labeled_weights(const dynet::Expression& va
 
     // dim: (output, n_words * n_words)
     auto output = e_output * output_values;
+    if (settings.label_bias)
+        output = output + e_output_label_bias;
     output = dynet::reshape(output, {e_output.dim().rows(), n_words, n_words});
 
     return output;

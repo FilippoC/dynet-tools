@@ -1,5 +1,6 @@
 #include "dytools/builders/embeddings/character.h"
 
+#include "dynet/param-init.h"
 
 namespace dytools
 {
@@ -15,7 +16,7 @@ CharacterEmbeddingsBuilder::CharacterEmbeddingsBuilder(dynet::ParameterCollectio
         local_pc(pc.add_subcollection("embschar")),
         bilstm(local_pc, settings.bilstm, settings.dim)
 {
-    lp = pc.add_lookup_parameters(n_char, {settings.dim});
+    lp = pc.add_lookup_parameters(n_char, {settings.dim}, dynet::ParameterInitUniform(-0.1f, 0.1f));
 
     std::cerr
         << "Character embeddings\n"

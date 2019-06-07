@@ -1,5 +1,7 @@
 #include "dytools/builders/embeddings/word.h"
 
+#include "dynet/param-init.h"
+
 namespace dytools
 {
 
@@ -15,7 +17,7 @@ WordEmbeddingsBuilder::WordEmbeddingsBuilder(dynet::ParameterCollection& pc, con
     size(_size),
     local_pc(pc.add_subcollection("embstoken"))
 {
-    lp = pc.add_lookup_parameters(size, {settings.dim});
+    lp = pc.add_lookup_parameters(size, {settings.dim}, dynet::ParameterInitUniform(-0.1f, 0.1f));
 
     std::cerr
         << "Token embeddings\n"
