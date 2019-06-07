@@ -10,7 +10,7 @@ namespace dytools
 NodeChecker::NodeChecker(dynet::ComputationGraph& cg, int rid_) :
     rid(rid_)
 {
-        alive_counts.resize(node(cg)->dim.batch_size(), 0u);
+        alive_counts.resize(node(cg)->dim.rows(), 0u);
 }
 
 void NodeChecker::check(dynet::ComputationGraph& cg)
@@ -18,12 +18,12 @@ void NodeChecker::check(dynet::ComputationGraph& cg)
     const dynet::Node* node_ = node(cg);
     if (dynamic_cast<const dynet::Rectify *>(node_) == nullptr)
         throw std::runtime_error("Rectifiers rid has changed! :(");
-    if (dim() != node_->dim.batch_size())
+    if (dim() != node_->dim.rows())
         throw std::runtime_error("Node size changed");
 
     const unsigned batch_size = dim();
-    const unsigned n_batches = node_->dim.batch_elems();
     const auto values = as_vector(cg.get_value(id(cg)));
+    const unsigned n_batches = values.size() / batch_size;
 
 
     for (unsigned batch = 0u ; batch < n_batches ; ++batch)
