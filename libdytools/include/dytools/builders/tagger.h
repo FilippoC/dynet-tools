@@ -26,6 +26,7 @@ struct TaggerBuilder
     dynet::ParameterCollection local_pc;
 
     MLPBuilder mlp;
+
     dynet::StandardSoftmaxBuilder builder;
     dynet::ComputationGraph* _cg;
 

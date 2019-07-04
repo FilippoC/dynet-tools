@@ -130,7 +130,6 @@ dynet::Expression ParserBuilder::get_representation(const dynet::Expression& hea
 
 dynet::Expression ParserBuilder::get_labeled_weights(const dynet::Expression& values, const unsigned n_words)
 {
-
     auto output_values = output_mlp.apply(values);
 
     // dim: (output, n_words * n_words)
@@ -144,7 +143,6 @@ dynet::Expression ParserBuilder::get_labeled_weights(const dynet::Expression& va
 
 dynet::Expression ParserBuilder::get_unlabeled_weights(const dynet::Expression& values, const unsigned n_words)
 {
-
     if (!has_bias)
         throw std::runtime_error("Unlabaled bias is disabled");
 
