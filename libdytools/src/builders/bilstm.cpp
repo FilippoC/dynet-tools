@@ -79,8 +79,8 @@ void BiLSTMBuilder::new_graph(dynet::ComputationGraph &cg, bool train, bool upda
         }
         else
         {
-            builders.at(stack).first.set_dropout(0.f);
-            builders.at(stack).second.set_dropout(0.f);
+            builders.at(stack).first.disable_dropout();
+            builders.at(stack).second.disable_dropout();
         }
     }
 }
