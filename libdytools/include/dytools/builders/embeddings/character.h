@@ -32,6 +32,8 @@ struct CharacterEmbeddingsBuilder
     dynet::LookupParameter lp;
     BiLSTMBuilder bilstm;
 
+    float input_dropout = 0.f;
+
     dynet::ComputationGraph* _cg;
     bool _update = true;
     bool _is_training = true;
@@ -39,6 +41,7 @@ struct CharacterEmbeddingsBuilder
     CharacterEmbeddingsBuilder(dynet::ParameterCollection& pc, const CharacterEmbeddingsSettings& settings, const unsigned n_char);
 
     void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
+    void set_dropout(float input);
 
     dynet::Expression get(const unsigned c);
     dynet::Expression get(const std::vector<unsigned>& word);

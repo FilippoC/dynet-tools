@@ -10,6 +10,7 @@ namespace dytools
 struct TaggerSettings
 {
     bool output_bias = false;
+    bool fix_output_bias = false;
     MLPSettings mlp;
 
     template<class Archive>
@@ -27,7 +28,8 @@ struct TaggerBuilder
 
     MLPBuilder mlp;
 
-    dynet::StandardSoftmaxBuilder builder;
+    dynet::Parameter p_W, p_bias;
+    dynet::Expression e_W, e_bias;
     dynet::ComputationGraph* _cg;
 
     TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSettings& settings, unsigned size, unsigned dim_input);

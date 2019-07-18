@@ -35,6 +35,11 @@ void CharacterEmbeddingsBuilder::new_graph(dynet::ComputationGraph& cg, bool tra
     bilstm.new_graph(cg, training, update);
 }
 
+void CharacterEmbeddingsBuilder::set_dropout(float value)
+{
+    input_dropout = value;
+}
+
 dynet::Expression CharacterEmbeddingsBuilder::get(const unsigned c)
 {
     if (_update)
@@ -49,7 +54,10 @@ dynet::Expression CharacterEmbeddingsBuilder::get(const std::vector<unsigned>& s
     for (unsigned i = 0u; i < str.size(); ++i)
     {
         const unsigned c = str.at(i);
-        input.push_back(get(c));
+        auto emb = get(c);
+        if (_is_training && input_dropout > 0.f)
+            emb = dynet::dropout(emb, input_dropout);
+        input.push_back(emb);
     }
 
     return bilstm.endpoints(input);

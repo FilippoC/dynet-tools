@@ -8,9 +8,12 @@ namespace dytools
 TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSettings& settings, unsigned size, unsigned dim_input) :
     settings(settings),
     local_pc(pc.add_subcollection("tagger")),
-    mlp(local_pc, settings.mlp, dim_input),
-    builder(mlp.output_rows(), size, local_pc, settings.output_bias)
+    mlp(local_pc, settings.mlp, dim_input)
 {
+    p_W = local_pc.add_parameters({size, mlp.output_rows()});
+    if (settings.output_bias)
+        p_bias = local_pc.add_parameters({size}, dynet::ParameterInitConst(0.f));
+
     std::cerr
         << "Tagger\n"
         << " num classes: " << size << "\n"
@@ -21,7 +24,18 @@ void TaggerBuilder::new_graph(dynet::ComputationGraph& cg, bool train, bool upda
 {
     _cg = &cg;
     mlp.new_graph(cg, train, update);
-    builder.new_graph(cg, update);
+    if (update)
+        e_W = dynet::parameter(cg, p_W);
+    else
+        e_W = dynet::const_parameter(cg, p_W);
+
+    if (settings.output_bias)
+    {
+        if (update and !settings.fix_output_bias)
+            e_bias = dynet::parameter(cg, p_bias);
+        else
+            e_bias = dynet::const_parameter(cg, p_bias);
+    }
 }
 
 void TaggerBuilder::set_dropout(float value)
@@ -32,7 +46,10 @@ void TaggerBuilder::set_dropout(float value)
 dynet::Expression TaggerBuilder::full_logits(const dynet::Expression &input)
 {
     auto repr = mlp.apply(input);
-    return builder.full_logits(repr);
+    if (settings.output_bias)
+        return dynet::affine_transform({e_bias, e_W, repr});
+    else
+        return e_W * repr;
 }
 
 dynet::Expression TaggerBuilder::neg_log_softmax(const dynet::Expression& input, unsigned idx)
