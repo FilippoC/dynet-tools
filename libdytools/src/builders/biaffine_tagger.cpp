@@ -45,7 +45,8 @@ BiAffineTaggerBuilder::BiAffineTaggerBuilder(
 
     if (dict->size() < 50)
     {
-        std::cerr << " classes: " << dict->convert((unsigned) 0u);
+	const unsigned zero = 0u;
+        std::cerr << " classes: " << dict->convert(zero);
         for (auto i = 0u; i < dict->size(); ++i)
             std::cerr << "\t" << dict->convert(i);
         std::cerr << "\n\n";
