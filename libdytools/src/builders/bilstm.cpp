@@ -11,11 +11,18 @@ unsigned int BiLSTMSettings::output_rows(const unsigned input_dim) const
         return 2 * dim;
 }
 
+
 BiLSTMBuilder::BiLSTMBuilder(dynet::ParameterCollection &pc, const BiLSTMSettings &settings, unsigned input_dim) :
         settings(settings),
         local_pc(pc.add_subcollection("bilstm")),
         input_dim(input_dim)
 {
+    if (settings.boundaries)
+    {
+        p_begin = local_pc.add_parameters({input_dim});
+        p_end = local_pc.add_parameters({input_dim});
+    }
+
     for (unsigned stack = 0; stack < settings.stacks; ++stack)
         builders.emplace_back(
                 dynet::VanillaLSTMBuilder(
@@ -45,22 +52,59 @@ unsigned BiLSTMBuilder::output_rows() const
     return settings.output_rows(input_dim);
 }
 
-void BiLSTMBuilder::new_graph(dynet::ComputationGraph &cg, bool update)
+void BiLSTMBuilder::new_graph(dynet::ComputationGraph &cg, bool train, bool update)
 {
+    if (settings.boundaries)
+    {
+        if (update)
+        {
+            e_begin = dynet::parameter(cg, p_begin);
+            e_end = dynet::parameter(cg, p_end);
+        }
+        else
+        {
+            e_begin = dynet::const_parameter(cg, p_begin);
+            e_end = dynet::const_parameter(cg, p_end);
+        }
+    }
     for (unsigned stack = 0; stack < settings.stacks; ++stack)
     {
         builders.at(stack).first.new_graph(cg, update);
         builders.at(stack).second.new_graph(cg, update);
+
+        if (train)
+        {
+            builders.at(stack).first.set_dropout(dropout);
+            builders.at(stack).second.set_dropout(dropout);
+        }
+        else
+        {
+            builders.at(stack).first.disable_dropout();
+            builders.at(stack).second.disable_dropout();
+        }
     }
+}
+
+void BiLSTMBuilder::set_dropout(float value)
+{
+    dropout = value;
 }
 
 std::vector<dynet::Expression> BiLSTMBuilder::operator()(const std::vector<dynet::Expression>& embeddings)
 {
-    const unsigned size = embeddings.size();
-    std::vector<dynet::Expression> ret(embeddings);
+    std::vector<dynet::Expression> ret;
+    ret.reserve(embeddings.size() + 2);
+    if (settings.boundaries)
+        ret.push_back(e_begin);
+    std::copy(embeddings.begin(), embeddings.end(), std::back_inserter(ret));
+    if (settings.boundaries)
+        ret.push_back(e_end);
 
-    std::vector<dynet::Expression> e_forward(embeddings.size());
-    std::vector<dynet::Expression> e_backward(embeddings.size());
+    const unsigned size = ret.size();
+
+    std::vector<dynet::Expression> e_forward(size);
+    std::vector<dynet::Expression> e_backward(size);
+
     for (unsigned stack = 0; stack < settings.stacks; ++stack)
     {
         builders.at(stack).first.start_new_sequence();
@@ -73,7 +117,42 @@ std::vector<dynet::Expression> BiLSTMBuilder::operator()(const std::vector<dynet
         for (unsigned i = 0u ; i < size ; ++i)
             ret.at(i) = dynet::concatenate({e_forward.at(i), e_backward.at(i)});
     }
+
+    // remove first and last elements
+    if (settings.boundaries)
+    {
+        for (unsigned i = 0 ; i < embeddings.size() ; ++ i)
+            ret.at(i) = ret.at(i + 1);
+        ret.resize(embeddings.size());
+    }
+
     return ret;
+}
+
+dynet::Expression BiLSTMBuilder::endpoints(const std::vector<dynet::Expression> &embeddings)
+{
+    std::vector<dynet::Expression> fixed_embs;
+    fixed_embs.reserve(embeddings.size() + 2);
+    if (settings.boundaries)
+        fixed_embs.push_back(e_begin);
+    std::copy(embeddings.begin(), embeddings.end(), std::back_inserter(fixed_embs));
+    if (settings.boundaries)
+        fixed_embs.push_back(e_end);
+
+    const unsigned size = fixed_embs.size();
+    if (builders.size() != 1u)
+        throw std::runtime_error("Endpoints can be used only if the number of stacks=1");
+
+    builders.at(0u).first.start_new_sequence();
+    builders.at(0u).second.start_new_sequence();
+    dynet::Expression f, b;
+
+    for (unsigned i = 0u ; i < size ; ++i)
+        f = builders.at(0u).first.add_input(fixed_embs.at(i));
+    for (int i = size - 1 ; i >= 0 ; --i)
+        b = builders.at(0u).second.add_input(fixed_embs.at(i));
+
+    return dynet::concatenate({f, b});
 }
 
 

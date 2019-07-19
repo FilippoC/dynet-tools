@@ -1,5 +1,7 @@
 #include "dytools/builders/embeddings/word.h"
 
+#include "dynet/param-init.h"
+
 namespace dytools
 {
 
@@ -9,36 +11,29 @@ unsigned int WordEmbeddingsSettings::output_rows() const
     return dim;
 }
 
-WordEmbeddingsBuilder::WordEmbeddingsBuilder(dynet::ParameterCollection& pc, const WordEmbeddingsSettings& settings, const std::string& name) :
-        settings(settings),
-        local_pc(pc.add_subcollection(name))
-{}
 
-WordEmbeddingsBuilder::WordEmbeddingsBuilder(dynet::ParameterCollection& pc, const WordEmbeddingsSettings& settings, std::shared_ptr<dytools::Dict> dict) :
+WordEmbeddingsBuilder::WordEmbeddingsBuilder(dynet::ParameterCollection& pc, const WordEmbeddingsSettings& settings, const unsigned _size) :
     settings(settings),
-    local_pc(pc.add_subcollection("embstoken")),
-    dict(dict)
+    size(_size),
+    local_pc(pc.add_subcollection("embstoken"))
 {
-    lp = pc.add_lookup_parameters(dict->size(), {settings.dim});
+    lp = pc.add_lookup_parameters(size, {settings.dim}, dynet::ParameterInitUniform(-0.1f, 0.1f));
 
-        std::cerr
+    std::cerr
         << "Token embeddings\n"
         << " dim: " << settings.dim << "\n"
-        << " vocabulary size: " << dict->size() << "\n"
+        << " vocabulary size: " << size << "\n"
         << "\n"
-        ;
+    ;
 }
 
-void WordEmbeddingsBuilder::new_graph(dynet:: ComputationGraph& cg, bool update)
+void WordEmbeddingsBuilder::new_graph(dynet:: ComputationGraph& cg, bool training, bool update)
 {
     _cg = &cg;
     _update = update;
+    _is_training = training;
 }
 
-dynet::Expression WordEmbeddingsBuilder::get(const std::string& str)
-{
-   return get((unsigned) dict->convert(str));
-}
 
 dynet::Expression WordEmbeddingsBuilder::get(const unsigned idx)
 {
@@ -78,23 +73,6 @@ std::vector<dynet::Expression> WordEmbeddingsBuilder::get_all_as_vector(const st
     std::vector<dynet::Expression> ret;
     for (const auto u : indices)
         ret.push_back(get(u));
-    return ret;
-}
-
-
-dynet::Expression WordEmbeddingsBuilder::get_all_as_expr(const std::vector<std::string> strings)
-{
-    std::vector<unsigned> indices;
-    for (const auto& s : strings)
-        indices.push_back(dict->convert(s));
-    return get_all_as_expr(indices);
-}
-
-std::vector<dynet::Expression> WordEmbeddingsBuilder::get_all_as_vector(const std::vector<std::string> strings)
-{
-    std::vector<dynet::Expression> ret;
-    for (const auto s : strings)
-        ret.push_back(get(s));
     return ret;
 }
 

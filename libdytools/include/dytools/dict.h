@@ -13,58 +13,46 @@
 namespace dytools
 {
 
-struct DictSettings
-{
-    bool lowercase = false;
-    std::string unk_word = "";
-    std::string num_word = "";
-
-    template<class Archive>
-    void serialize(Archive &ar, const unsigned int)
-    {
-        ar & lowercase;
-        ar & unk_word;
-        ar & num_word;
-    }
-};
-
 struct Dict
 {
-    typedef std::unordered_map<std::string, unsigned> Map;
+    const std::string unk_str = "*UNK*";
+    const std::string num_str = "*NUM*";
 
-    DictSettings settings;
-    bool frozen = false;
+    bool has_unk;
+    bool has_num;
+    bool lowercase;
+
+    unsigned unk_id = 0;
+    unsigned num_id = 0;
 
     std::vector<std::string> id_to_word;
-    Map word_to_id;
+    std::unordered_map<std::string, unsigned> word_to_id;
 
-    Dict();
-    Dict(const DictSettings& settings);
-
-    bool has_unk() const;
-    bool has_num() const;
-    unsigned size() const;
-    bool contains(const std::string& words) const;
-
-    void freeze();
-    bool is_frozen() const;
-    bool is_special(const std::string& word) const;
+    Dict(bool _lowercase=false, bool _has_num=false, bool _has_unk=false);
 
     std::string normalize(const std::string& word) const;
-    unsigned convert(const std::string& word);
-    const std::string& convert(const unsigned id) const;
-    void clear();
+    unsigned to_id(const std::string& _word) const;
+    unsigned to_id(const char& _char) const;
+    std::string to_string(const unsigned id) const;
+
+    void add(const std::string& _word);
+    void add(const char& _char);
+
+    unsigned size() const;
+
+    void swap(Dict& other);
 
     template<class Archive>
-    void serialize(Archive &ar, const unsigned int)
+    void serialize(Archive& ar, const unsigned int)
     {
-        ar & settings;
-        ar & frozen;
+        ar & has_unk;
+        ar & has_num;
+        ar & lowercase;
+        ar & unk_id;
+        ar & num_id;
         ar & id_to_word;
         ar & word_to_id;
     }
 };
-
-std::shared_ptr<Dict> read_dict_from_file(const DictSettings& settings, const std::string &path);
 
 }

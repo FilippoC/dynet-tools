@@ -32,7 +32,7 @@ struct BaseDependencySettings
     }
 };
 
-struct BaseDependencyNetwork : public Builder, Network<ConllSentence>
+struct BaseDependencyNetwork : Network<ConllSentence>
 {
     const BaseDependencySettings settings;
     dynet::ParameterCollection local_pc;
@@ -52,8 +52,7 @@ struct BaseDependencyNetwork : public Builder, Network<ConllSentence>
             std::shared_ptr<dytools::Dict> label_dict,
             unsigned embeddings_size
     );
-    virtual void new_graph(dynet::ComputationGraph& cg, bool update = true);
-    void set_is_training(bool value) override;
+    virtual void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
 
     virtual unsigned get_embeddings_size() const = 0;
     virtual std::vector<dynet::Expression> get_embeddings(const ConllSentence &sentence) = 0;

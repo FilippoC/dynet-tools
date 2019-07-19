@@ -20,25 +20,15 @@ BaseDependencyNetwork::BaseDependencyNetwork(
         biaffine_tagger(local_pc, settings.biaffine_tagger, second_bilstm.output_rows(), label_dict, true)
 {}
 
-void BaseDependencyNetwork::new_graph(dynet::ComputationGraph& cg, bool update)
+void BaseDependencyNetwork::new_graph(dynet::ComputationGraph& cg, bool training, bool update)
 {
-    first_bilstm.new_graph(cg, update);
-    second_bilstm.new_graph(cg, update);
-    tagger.new_graph(cg, update);
-    biaffine.new_graph(cg, update);
-    biaffine_tagger.new_graph(cg, update);
+    first_bilstm.new_graph(cg, training, update);
+    second_bilstm.new_graph(cg, training, update);
+    tagger.new_graph(cg, training, update);
+    biaffine.new_graph(cg, training, update);
+    biaffine_tagger.new_graph(cg, training, update);
 
     _cg = &cg;
-}
-
-void BaseDependencyNetwork::set_is_training(bool value)
-{
-    Builder::set_is_training(value);
-
-    first_bilstm.set_is_training(value);
-    second_bilstm.set_is_training(value);
-    tagger.set_is_training(value);
-    biaffine.set_is_training(value);
 }
 
 std::tuple<dynet::Expression, dynet::Expression, dynet::Expression> BaseDependencyNetwork::logits(const ConllSentence &sentence)

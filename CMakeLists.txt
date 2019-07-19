@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 2.8)
 project(dynet-tools)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -11,7 +11,7 @@ add_definitions("-Wfatal-errors")
 add_definitions("-g")
 add_definitions("-std=c++11")
 add_definitions("-funroll-loops")
-add_definitions("-DEIGEN_FAST_MATH")
+#add_definitions("-DEIGEN_FAST_MATH")
 add_definitions("-march=native")
 add_definitions("-DBOOST_LOG_DYN_LINK")
 

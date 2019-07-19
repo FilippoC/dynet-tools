@@ -31,10 +31,17 @@ GCNBuilder::GCNBuilder(dynet::ParameterCollection& pc, const GCNSettings& settin
             last = settings.dim;
     }
     _output_rows = last;
+
+    std::cerr
+        << "Graph Convolutional Network\n"
+        << " layers: " << settings.layers << "\n"
+        << " dim: " << settings.dim << "\n"
+        << std::endl;
 }
 
-void GCNBuilder::new_graph(dynet::ComputationGraph& cg, bool update)
+void GCNBuilder::new_graph(dynet::ComputationGraph& cg, bool training, bool update)
 {
+    _training = training;
     for (unsigned i = 0 ; i < settings.layers ; ++ i)
     {
         if (update)
@@ -67,15 +74,23 @@ dynet::Expression GCNBuilder::apply(const dynet::Expression &input, const dynet:
     auto last = input;
     for (unsigned i = 0u ; i < settings.layers ; ++i)
     {
-        auto current = dynet::colwise_add(e_W_self[i] * last,  e_b_self[i]);
+        auto current = dynet::colwise_add(e_W_self.at(i) * last,  e_b_self.at(i));
 
-        auto parents = dynet::colwise_add(e_W_parents[i] * last, e_b_parents[i]);
+        auto parents = dynet::colwise_add(e_W_parents.at(i) * last, e_b_parents.at(i));
         current = current + parents * graph;
 
-        auto children = dynet::colwise_add(e_W_children[i] * last, e_b_children[i]);
+        auto children = dynet::colwise_add(e_W_children.at(i) * last, e_b_children.at(i));
         current = current + children * t_graph;
 
-        current = dynet::tanh(current);
+        if (dropout_rate > 0.f)
+        {
+            if (_training)
+                current = dynet::dropout(current, dropout_rate);
+            else
+                // because of dynet bug
+                current = dynet::dropout(current, 0.f);
+        }
+        current = dytools::activation(current, settings.activation);
 
         if (settings.dense)
             last = dynet::concatenate({current, last});
@@ -84,6 +99,11 @@ dynet::Expression GCNBuilder::apply(const dynet::Expression &input, const dynet:
     }
 
     return last;
+}
+
+void GCNBuilder::set_dropout(float value)
+{
+    dropout_rate = value;
 }
 
 unsigned GCNBuilder::output_rows() const

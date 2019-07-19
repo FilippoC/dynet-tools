@@ -33,8 +33,8 @@ void RunCLE(const unsigned length_, const std::vector<float>& scores, std::vecto
     std::vector<std::vector<int> > candidate_heads(length_);
     std::vector<std::vector<float> > candidate_scores(length_);
     std::vector<bool> disabled(length_, false);
-    for (int m = 1; m < length_; ++m) {
-        for (int h = 0; h < length_; ++h) {
+    for (unsigned m = 1; m < length_; ++m) {
+        for (unsigned h = 0; h < length_; ++h) {
             int r = h + m * length_;
             if (r < 0) continue;
             candidate_heads[m].push_back(h);
@@ -48,9 +48,9 @@ void RunCLE(const unsigned length_, const std::vector<float>& scores, std::vecto
 
     *value = 0;
     (*heads)[0] = -1;
-    for (int m = 1; m < length_; ++m) {
+    for (unsigned m = 1; m < length_; ++m) {
         int h = (*heads)[m];
-        assert(h >= 0 && h < length_);
+        assert(h >= 0 && h < (int) length_);
         int r = h + m * length_;
         assert(r >= 0);
         *value += scores[r];
@@ -72,10 +72,10 @@ void RunChuLiuEdmondsIteration(std::vector<bool> *disabled,
     for (int m = 1; m < length; ++m) {
         if ((*disabled)[m]) continue;
         int best = -1;
-        for (int k = 0; k < (*candidate_heads)[m].size(); ++k) {
+        for (unsigned k = 0; k < (*candidate_heads)[m].size(); ++k) {
             if (best < 0 ||
                 (*candidate_scores)[m][k] > (*candidate_scores)[m][best]) {
-                best = k;
+                best = (int) k;
             }
         }
         if (best < 0) {

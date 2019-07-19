@@ -3,10 +3,8 @@
 #include <memory>
 #include "dynet/expr.h"
 
-#include "dytools/data/conll.h"
 #include "dytools/builders/embeddings/character.h"
 #include "dytools/builders/embeddings/word.h"
-#include "dytools/builders/builder.h"
 
 namespace dytools
 {
@@ -32,7 +30,7 @@ struct EmbeddingsSettings
     unsigned output_rows() const;
 };
 
-struct EmbeddingsBuilder : public Builder
+struct EmbeddingsBuilder
 {
     const EmbeddingsSettings settings;
     dynet::ParameterCollection local_pc;
@@ -47,13 +45,14 @@ struct EmbeddingsBuilder : public Builder
     EmbeddingsBuilder(
             dynet::ParameterCollection& pc,
             const EmbeddingsSettings& settings,
-            std::shared_ptr<dytools::Dict> token_dict,
-            std::shared_ptr<dytools::Dict> char_dict
+            const unsigned n_token,
+            const unsigned n_char
     );
 
-    void new_graph(dynet::ComputationGraph& cg, bool update=true);
-    void set_is_training(bool value) override;
-    std::vector<dynet::Expression> operator()(const ConllSentence& sentence);
+    void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
+    std::vector<dynet::Expression> operator()(const std::vector<unsigned>& tokens);
+    std::vector<dynet::Expression> operator()(const std::vector<std::vector<unsigned>>& v_chars);
+    std::vector<dynet::Expression> operator()(const std::vector<unsigned>& tokens, const std::vector<std::vector<unsigned>>& chars);
 
     unsigned output_rows() const;
 };

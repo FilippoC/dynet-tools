@@ -7,61 +7,20 @@
 namespace dytools
 {
 
-template <class Network, class DataType, class Evaluator>
-Training<Network, DataType, Evaluator>::Training(std::shared_ptr<Network> _network) :
+template <class Network, class DataType, class Evaluator, class Epoch>
+Training<Network, DataType, Evaluator, Epoch>::Training(std::shared_ptr<Network> _network) :
     network(std::move(_network))
 {}
 
 
-template <class Network, class DataType, class Evaluator>
-Training<Network, DataType, Evaluator>::Training(const TrainingSettings& settings, std::shared_ptr<Network> _network) :
+template <class Network, class DataType, class Evaluator, class Epoch>
+Training<Network, DataType, Evaluator, Epoch>::Training(const TrainingSettings& settings, std::shared_ptr<Network> _network) :
 settings(settings),
 network(std::move(_network))
 {}
 
-
-template <class Network, class DataType, class Evaluator>
-dynet::Expression Training<Network, DataType, Evaluator>::labeled_loss(const DataType &data)
-{
-    return network->labeled_loss(data);
-}
-
-template <class Network, class DataType, class Evaluator>
-dynet::Expression Training<Network, DataType, Evaluator>::unlabeled_loss(const DataType &data)
-{
-    return network->unlabeled_loss(data);
-}
-
-template <class Network, class DataType, class Evaluator>
-float Training<Network, DataType, Evaluator>::forward_backward(
-        dynet::ComputationGraph& cg,
-        typename std::vector<DataType>::const_iterator begin_labelled_data,
-        typename std::vector<DataType>::const_iterator end_labelled_data,
-        typename std::vector<DataType>::const_iterator begin_unlabelled_data,
-        typename std::vector<DataType>::const_iterator end_unlabelled_data
-        )
-{
-    std::vector<dynet::Expression> losses;
-
-    for (; begin_labelled_data != end_labelled_data; ++begin_labelled_data)
-        losses.push_back(labeled_loss(*begin_labelled_data));
-
-    for (; begin_unlabelled_data != end_unlabelled_data; ++begin_unlabelled_data)
-        losses.push_back(unlabeled_loss(*begin_unlabelled_data));
-
-    if (losses.size() == 0u)
-        throw std::runtime_error("No training data for the update");
-
-    auto e_loss = (losses.size() == 1u ? losses.at(0u) : dynet::sum(losses) / (float) losses.size());
-
-    const auto update_loss = as_scalar(cg.forward(e_loss));
-    cg.backward(e_loss);
-
-    return update_loss;
-}
-
-template <class Network, class DataType, class Evaluator>
-void Training<Network, DataType, Evaluator>::optimize_supervised(
+template <class Network, class DataType, class Evaluator, class Epoch>
+void Training<Network, DataType, Evaluator, Epoch>::optimize_supervised(
         dynet::Trainer &trainer,
         std::vector<DataType> &labeled_data,
         const std::vector<DataType> &dev_data
@@ -72,8 +31,8 @@ void Training<Network, DataType, Evaluator>::optimize_supervised(
     optimize(trainer, labeled_data, fake_container, dev_data);
 }
 
-template <class Network, class DataType, class Evaluator>
-void Training<Network, DataType, Evaluator>::optimize_unsupervised(
+template <class Network, class DataType, class Evaluator, class Epoch>
+void Training<Network, DataType, Evaluator, Epoch>::optimize_unsupervised(
         dynet::Trainer &trainer,
         std::vector<DataType> &unlabeled_data,
         const std::vector<DataType> &dev_data
@@ -84,8 +43,8 @@ void Training<Network, DataType, Evaluator>::optimize_unsupervised(
     optimize(trainer, fake_container, unlabeled_data, dev_data);
 }
 
-template <class Network, class DataType, class Evaluator>
-void Training<Network, DataType, Evaluator>::optimize_semisupervised(
+template <class Network, class DataType, class Evaluator, class Epoch>
+void Training<Network, DataType, Evaluator, Epoch>::optimize_semisupervised(
         dynet::Trainer &trainer,
         std::vector<DataType> &labeled_data,
         std::vector<DataType> &unlabeled_data,
@@ -96,75 +55,33 @@ void Training<Network, DataType, Evaluator>::optimize_semisupervised(
     optimize(trainer, labeled_data, unlabeled_data, dev_data);
 }
 
-template <class Network, class DataType, class Evaluator>
-void Training<Network, DataType, Evaluator>::optimize(
+template <class Network, class DataType, class Evaluator, class Epoch>
+void Training<Network, DataType, Evaluator, Epoch>::optimize(
         dynet::Trainer &trainer,
         std::vector<DataType> &labeled_data,
         std::vector<DataType> &unlabeled_data,
         const std::vector<DataType> &dev_data
 )
 {
-    unsigned next_labeled_instance_index = labeled_data.size();
-    unsigned next_unlabeled_instance_index = unlabeled_data.size();
-
     float best_dev_score = -std::numeric_limits<float>::infinity();
     unsigned best_dev_epoch = 0u;
     unsigned n_trials = 0u;
     unsigned n_epoch_without_improvement = 0u;
+
+    Epoch epoch_optimizer(network, trainer);
     for (unsigned epoch = 0; epoch < settings.n_epoch; ++epoch)
     {
         std::cerr << "\nEpoch " << epoch << "/" << settings.n_epoch << std::endl;
 
-        network->train();
-        float epoch_loss = 0.f;
         auto start_epoch = std::chrono::steady_clock::now();
-        for (unsigned update = 0; update < settings.n_updates_per_epoch; ++update)
-        {
-            auto labeled_data_begin = labeled_data.end();
-            auto labeled_data_end = labeled_data.end();
-            auto unlabeled_data_begin = unlabeled_data.end();
-            auto unlabeled_data_end = unlabeled_data.end();
 
-            if (labeled_data.size() > 0)
-            {
-                if (next_labeled_instance_index >= labeled_data.size())
-                {
-                    std::random_shuffle(labeled_data.begin(), labeled_data.end());
-                    next_labeled_instance_index = 0u;
-                }
+        const float epoch_loss = epoch_optimizer.optimize(
+                labeled_data,
+                unlabeled_data,
+                settings.n_updates_per_epoch,
+                settings.batch_size
+        );
 
-                labeled_data_begin = labeled_data.begin() + next_labeled_instance_index;
-                labeled_data_end = labeled_data.begin() + next_labeled_instance_index + settings.batch_size;
-                next_labeled_instance_index += settings.batch_size;
-            }
-
-            if (unlabeled_data.size() > 0)
-            {
-                if (next_unlabeled_instance_index >= unlabeled_data.size())
-                {
-                    std::random_shuffle(unlabeled_data.begin(), unlabeled_data.end());
-                    next_unlabeled_instance_index = 0u;
-                }
-
-                unlabeled_data_begin = unlabeled_data.begin() + next_unlabeled_instance_index;
-                unlabeled_data_end = unlabeled_data.begin() + next_unlabeled_instance_index + settings.batch_size;
-                next_unlabeled_instance_index += settings.batch_size;
-            }
-
-            // build new computation graph
-            dynet::ComputationGraph cg;
-            network->new_graph(cg);
-
-            // compute the loss of each instance in the batch
-            const auto update_loss = forward_backward(
-                    cg,
-                    labeled_data_begin, labeled_data_end,
-                    unlabeled_data_begin, unlabeled_data_end
-                    );
-            trainer.update();
-
-            epoch_loss += update_loss;
-        }
         auto end_epoch = std::chrono::steady_clock::now();
         std::cerr
                 << "Epoch loss: " << epoch_loss
@@ -176,7 +93,6 @@ void Training<Network, DataType, Evaluator>::optimize(
             save(settings.model_path + "." + std::to_string(epoch));
 
         // evaluate on dev data
-        network->eval();
         float dev_score = evaluate(dev_data);
         if (dev_score > best_dev_score)
         {
@@ -219,45 +135,45 @@ void Training<Network, DataType, Evaluator>::optimize(
         << std::endl;
 }
 
-template <class Network, class DataType, class Evaluator>
-float Training<Network, DataType, Evaluator>::evaluate(const std::vector<DataType>& data)
+template <class Network, class DataType, class Evaluator, class Epoch>
+float Training<Network, DataType, Evaluator, Epoch>::evaluate(const std::vector<DataType>& data)
 {
-    return Evaluator()(network.get(), data);
+    return Evaluator()(network, data);
 }
 
-template <class Network, class DataType, class Evaluator>
-void Training<Network, DataType, Evaluator>::save(const std::string& path)
+template <class Network, class DataType, class Evaluator, class Epoch>
+void Training<Network, DataType, Evaluator, Epoch>::save(const std::string& path)
 {
     std::cerr << "Saving model to: " << path << std::endl;
     dynet::TextFileSaver s(path);
     s.save(network->local_pc);
 }
 
-template <class Network, class DataType, class Evaluator>
-void Training<Network, DataType, Evaluator>::save()
+template <class Network, class DataType, class Evaluator, class Epoch>
+void Training<Network, DataType, Evaluator, Epoch>::save()
 {
     if (settings.model_path.size() > 0)
         save(settings.model_path);
 }
 
-template <class Network, class DataType, class Evaluator>
-void Training<Network, DataType, Evaluator>::load(const std::string& path)
+template <class Network, class DataType, class Evaluator, class Epoch>
+void Training<Network, DataType, Evaluator, Epoch>::load(const std::string& path)
 {
     std::cerr << "Loading model from: " << path << std::endl;
     dynet::TextFileLoader s(path);
     s.populate(network->local_pc);
 }
 
-template <class Network, class DataType, class Evaluator>
-void Training<Network, DataType, Evaluator>::load()
+template <class Network, class DataType, class Evaluator, class Epoch>
+void Training<Network, DataType, Evaluator, Epoch>::load()
 {
     if (settings.model_path.size() > 0)
         load(settings.model_path);
 }
 
 
-template <class Network, class DataType, class Evaluator>
-void Training<Network, DataType, Evaluator>::training_settings(const std::string& mode)
+template <class Network, class DataType, class Evaluator, class Epoch>
+void Training<Network, DataType, Evaluator, Epoch>::training_settings(const std::string& mode)
 {
     std::cerr
         << mode << ":\n"
@@ -273,4 +189,224 @@ void Training<Network, DataType, Evaluator>::training_settings(const std::string
         << std::endl;
 }
 
+
+//
+// Dynamic Graph Optimizer
+//
+
+
+template <class Network, class DataType>
+DynamicGraphEpoch<Network, DataType>::DynamicGraphEpoch(std::shared_ptr<Network> _network, dynet::Trainer& _trainer) :
+    network(_network),
+    trainer(_trainer)
+{}
+
+template <class Network, class DataType>
+dynet::Expression DynamicGraphEpoch<Network, DataType>::labeled_loss(const DataType &data)
+{
+    return network->labeled_loss(data);
+}
+
+template <class Network, class DataType>
+dynet::Expression DynamicGraphEpoch<Network, DataType>::unlabeled_loss(const DataType &data)
+{
+    return network->unlabeled_loss(data);
+}
+
+template <class Network, class DataType>
+float DynamicGraphEpoch<Network, DataType>::forward_backward(
+        dynet::ComputationGraph& cg,
+        typename std::vector<DataType>::const_iterator begin_labelled_data,
+        typename std::vector<DataType>::const_iterator end_labelled_data,
+        typename std::vector<DataType>::const_iterator begin_unlabelled_data,
+        typename std::vector<DataType>::const_iterator end_unlabelled_data
+)
+{
+    std::vector<dynet::Expression> losses;
+
+    for (; begin_labelled_data != end_labelled_data; ++begin_labelled_data)
+        losses.push_back(labeled_loss(*begin_labelled_data));
+
+    for (; begin_unlabelled_data != end_unlabelled_data; ++begin_unlabelled_data)
+        losses.push_back(unlabeled_loss(*begin_unlabelled_data));
+
+    if (losses.size() == 0u)
+        throw std::runtime_error("No training data for the update");
+
+    auto e_loss = (losses.size() == 1u ? losses.at(0u) : dynet::sum(losses) / (float) losses.size());
+
+    const auto update_loss = as_scalar(cg.forward(e_loss));
+    cg.backward(e_loss);
+
+    return update_loss;
+}
+
+template <class Network, class DataType>
+float DynamicGraphEpoch<Network, DataType>::optimize(
+        std::vector<DataType> &labeled_data,
+        std::vector<DataType> &unlabeled_data,
+        const unsigned n_updates_per_epoch,
+        const unsigned batch_size
+)
+{
+    unsigned next_labeled_instance_index = labeled_data.size();
+    unsigned next_unlabeled_instance_index = unlabeled_data.size();
+
+    float epoch_loss = 0.f;
+    for (unsigned update = 0; update < n_updates_per_epoch; ++update)
+    {
+        auto labeled_data_begin = labeled_data.end();
+        auto labeled_data_end = labeled_data.end();
+        auto unlabeled_data_begin = unlabeled_data.end();
+        auto unlabeled_data_end = unlabeled_data.end();
+
+        if (labeled_data.size() > 0)
+        {
+            if (labeled_data.size() < batch_size)
+                throw std::runtime_error("Not enough labeled data");
+            if (next_labeled_instance_index >= labeled_data.size())
+            {
+                std::random_shuffle(labeled_data.begin(), labeled_data.end());
+                next_labeled_instance_index = 0u;
+            }
+
+            labeled_data_begin = labeled_data.begin() + next_labeled_instance_index;
+            labeled_data_end = labeled_data.begin() + next_labeled_instance_index + batch_size;
+            next_labeled_instance_index += batch_size;
+        }
+
+        if (unlabeled_data.size() > 0)
+        {
+            if (unlabeled_data.size() < batch_size)
+                throw std::runtime_error("Not enough labeled data");
+            if (next_unlabeled_instance_index >= unlabeled_data.size())
+            {
+                std::random_shuffle(unlabeled_data.begin(), unlabeled_data.end());
+                next_unlabeled_instance_index = 0u;
+            }
+
+            unlabeled_data_begin = unlabeled_data.begin() + next_unlabeled_instance_index;
+            unlabeled_data_end = unlabeled_data.begin() + next_unlabeled_instance_index + batch_size;
+            next_unlabeled_instance_index += batch_size;
+        }
+
+        // build new computation graph
+        dynet::ComputationGraph cg;
+        network->new_graph(cg, true, true); // train & update
+
+        // compute the loss of each instance in the batch
+        const auto update_loss = forward_backward(
+                cg,
+                labeled_data_begin, labeled_data_end,
+                unlabeled_data_begin, unlabeled_data_end
+        );
+        trainer.update();
+
+        epoch_loss += update_loss;
+    }
+    return epoch_loss;
+}
+
+
+//
+// Static Graph Optimizer
+//
+
+
+template <class Network, class DataType>
+StaticGraphEpoch<Network, DataType>::StaticGraphEpoch(std::shared_ptr<Network> _network, dynet::Trainer& _trainer) :
+        network(_network),
+        trainer(_trainer)
+{}
+
+template <class Network, class DataType>
+float StaticGraphEpoch<Network, DataType>::forward_backward(
+        dynet::ComputationGraph& cg,
+        typename std::vector<DataType>::const_iterator begin_labelled_data,
+        typename std::vector<DataType>::const_iterator end_labelled_data,
+        typename std::vector<DataType>::const_iterator begin_unlabelled_data,
+        typename std::vector<DataType>::const_iterator end_unlabelled_data
+)
+{
+    std::vector<dynet::Expression> losses;
+
+    network->update_input(
+            begin_labelled_data,
+            end_labelled_data,
+            begin_unlabelled_data,
+            end_unlabelled_data
+    );
+
+    const auto e_loss = network->get_loss();
+    const auto update_loss = as_scalar(cg.forward(e_loss));
+    cg.backward(e_loss);
+
+    return update_loss;
+}
+
+template <class Network, class DataType>
+float StaticGraphEpoch<Network, DataType>::optimize(
+        std::vector<DataType> &labeled_data,
+        std::vector<DataType> &unlabeled_data,
+        const unsigned n_updates_per_epoch,
+        const unsigned batch_size
+)
+{
+    unsigned next_labeled_instance_index = labeled_data.size();
+    unsigned next_unlabeled_instance_index = unlabeled_data.size();
+
+    // build new computation graph
+    dynet::ComputationGraph cg;
+    network->new_graph(cg, true, true); // train & update
+
+    float epoch_loss = 0.f;
+    for (unsigned update = 0; update < n_updates_per_epoch; ++update)
+    {
+        auto labeled_data_begin = labeled_data.end();
+        auto labeled_data_end = labeled_data.end();
+        auto unlabeled_data_begin = unlabeled_data.end();
+        auto unlabeled_data_end = unlabeled_data.end();
+
+        if (labeled_data.size() > 0)
+        {
+            if (labeled_data.size() < batch_size)
+                throw std::runtime_error("Not enough labeled data");
+            if (next_labeled_instance_index >= labeled_data.size())
+            {
+                std::random_shuffle(labeled_data.begin(), labeled_data.end());
+                next_labeled_instance_index = 0u;
+            }
+
+            labeled_data_begin = labeled_data.begin() + next_labeled_instance_index;
+            labeled_data_end = labeled_data.begin() + next_labeled_instance_index + batch_size;
+            next_labeled_instance_index += batch_size;
+        }
+
+        if (unlabeled_data.size() > 0)
+        {
+            if (unlabeled_data.size() < batch_size)
+                throw std::runtime_error("Not enough labeled data");
+            if (next_unlabeled_instance_index >= unlabeled_data.size())
+            {
+                std::random_shuffle(unlabeled_data.begin(), unlabeled_data.end());
+                next_unlabeled_instance_index = 0u;
+            }
+
+            unlabeled_data_begin = unlabeled_data.begin() + next_unlabeled_instance_index;
+            unlabeled_data_end = unlabeled_data.begin() + next_unlabeled_instance_index + batch_size;
+            next_unlabeled_instance_index += batch_size;
+        }
+
+        // compute the loss of each instance in the batch
+        const auto update_loss = forward_backward(
+                cg,
+                labeled_data_begin, labeled_data_end,
+                unlabeled_data_begin, unlabeled_data_end
+        );
+        trainer.update();
+
+        epoch_loss += update_loss;
+    }
+    return epoch_loss;
+}
 }
