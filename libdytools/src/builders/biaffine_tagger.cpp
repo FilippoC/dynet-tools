@@ -40,18 +40,7 @@ BiAffineTaggerBuilder::BiAffineTaggerBuilder(
             << " bias: " << (settings.bias ? "yes" : "no") << "\n"
             << " label bias: " << (settings.bias ? "yes" : "no") << "\n"
             << " root prefix: " << (root_prefix ? "yes" : "no") << "\n"
-            << " n labels: " << dict->size() << "\n";
-
-    if (dict->size() < 50)
-    {
-	const unsigned zero = 0u;
-        std::cerr << " classes: " << dict->convert(zero);
-        for (auto i = 0u; i < dict->size(); ++i)
-            std::cerr << "\t" << dict->convert(i);
-        std::cerr << "\n\n";
-    }
-
-    std::cerr << "\n";
+            << " n labels: " << size << "\n";
 }
 
 void BiAffineTaggerBuilder::new_graph(dynet::ComputationGraph &cg, bool, bool update)
