@@ -39,7 +39,9 @@ struct BiLSTMBuilder
     BiLSTMBuilder(dynet::ParameterCollection& pc, const BiLSTMSettings& settings, unsigned input_dim);
 
     void new_graph(dynet::ComputationGraph& cg, bool training, bool update);
-    std::vector<dynet::Expression> operator()(const std::vector<dynet::Expression>& embeddings);
+    std::vector<dynet::Expression> operator()(const std::vector<dynet::Expression>& embeddings, const bool keep_boundaries=false);
+    std::pair<std::vector<dynet::Expression>, std::vector<dynet::Expression>> unmerged(const std::vector<dynet::Expression>& embeddings, const bool keep_boundaries);
+
     dynet::Expression endpoints(const std::vector<dynet::Expression>& embeddings);
     void set_dropout(float value);
 

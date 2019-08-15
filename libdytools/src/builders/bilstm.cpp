@@ -90,8 +90,25 @@ void BiLSTMBuilder::set_dropout(float value)
     dropout = value;
 }
 
-std::vector<dynet::Expression> BiLSTMBuilder::operator()(const std::vector<dynet::Expression>& embeddings)
+std::vector<dynet::Expression> BiLSTMBuilder::operator()(const std::vector<dynet::Expression>& embeddings, const bool keep_boundaries)
 {
+    if (keep_boundaries and settings.boundaries == false)
+        throw std::runtime_error("Cannot keep boundaries has they were not set in the settings.");
+
+    const auto e = unmerged(embeddings, keep_boundaries);
+
+    std::vector<dynet::Expression> ret;
+    ret.reserve(e.first.size());
+    for (unsigned i = 0u ; i < e.first.size() ; ++i)
+        ret.push_back(dynet::concatenate({e.first.at(i), e.second.at(i)}));
+    return ret;
+}
+
+std::pair<std::vector<dynet::Expression>, std::vector<dynet::Expression>> BiLSTMBuilder::unmerged(const std::vector<dynet::Expression>& embeddings, const bool keep_boundaries)
+{
+    if (keep_boundaries and settings.boundaries == false)
+        throw std::runtime_error("Cannot keep boundaries has they were not set in the settings.");
+
     std::vector<dynet::Expression> ret;
     ret.reserve(embeddings.size() + 2);
     if (settings.boundaries)
@@ -110,23 +127,29 @@ std::vector<dynet::Expression> BiLSTMBuilder::operator()(const std::vector<dynet
         builders.at(stack).first.start_new_sequence();
         builders.at(stack).second.start_new_sequence();
 
+        // merge from previous layer
+        if (stack > 0)
+            for (unsigned i = 0u ; i < size ; ++i)
+                ret.at(i) = dynet::concatenate({e_forward.at(i), e_backward.at(i)});
+
         for (unsigned i = 0u ; i < size ; ++i)
             e_forward.at(i) = builders.at(stack).first.add_input(ret.at(i));
         for (int i = size - 1 ; i >= 0 ; --i)
             e_backward.at(i) = builders.at(stack).second.add_input(ret.at(i));
-        for (unsigned i = 0u ; i < size ; ++i)
-            ret.at(i) = dynet::concatenate({e_forward.at(i), e_backward.at(i)});
     }
 
     // remove first and last elements
-    if (settings.boundaries)
+    if (settings.boundaries and !keep_boundaries)
     {
         for (unsigned i = 0 ; i < embeddings.size() ; ++ i)
-            ret.at(i) = ret.at(i + 1);
+        {
+            e_forward.at(i) = e_forward.at(i + 1);
+            e_backward.at(i) = e_backward.at(i + 1);
+        }
         ret.resize(embeddings.size());
     }
 
-    return ret;
+    return {std::move(e_forward), std::move(e_backward)};
 }
 
 dynet::Expression BiLSTMBuilder::endpoints(const std::vector<dynet::Expression> &embeddings)

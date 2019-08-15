@@ -47,7 +47,11 @@ unsigned Dict::to_id(const std::string& _word) const
         if (has_unk)
             return unk_id;
         else
-            throw std::runtime_error("Word not in dict");
+        {
+            std::ostringstream msg;
+            msg << "Word not in dict: " << _word << " / normalized as: " << word;
+            throw std::runtime_error(msg.str());
+        }
     }
     else
         return it->second;
