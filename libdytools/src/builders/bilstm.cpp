@@ -146,8 +146,8 @@ std::pair<std::vector<dynet::Expression>, std::vector<dynet::Expression>> BiLSTM
             e_forward.at(i) = e_forward.at(i + 1);
             e_backward.at(i) = e_backward.at(i + 1);
         }
-        e_forward.at(i) = e_forward.at(embeddings.size());
-        e_backward.at(i) = e_backward.at(embeddings.size());
+        e_forward.resize(embeddings.size());
+        e_backward.resize(embeddings.size());
     }
 
     return {std::move(e_forward), std::move(e_backward)};
