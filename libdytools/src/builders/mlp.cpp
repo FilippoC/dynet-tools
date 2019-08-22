@@ -20,6 +20,14 @@ MLPBuilder::MLPBuilder(dynet::ParameterCollection& pc, const MLPSettings& settin
         last = settings.dim;
     }
     _output_rows = last;
+
+    std::cerr
+            << "MLP\n"
+            << " input dim: " << dim_input << "\n"
+            << " hidden dim: " << settings.dim << "\n"
+            << " n layers: " << settings.layers << "\n"
+            << "\n"
+            ;
 }
 
 void MLPBuilder::new_graph(dynet::ComputationGraph& cg, bool training, bool update)

@@ -17,6 +17,8 @@ TaggerBuilder::TaggerBuilder(dynet::ParameterCollection& pc, const TaggerSetting
     std::cerr
         << "Tagger\n"
         << " num classes: " << size << "\n"
+        << " output bias: " << (settings.output_bias ? "yes" : "no") << "\n"
+        << "\n"
         ;
 }
 
