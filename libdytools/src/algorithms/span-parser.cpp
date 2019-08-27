@@ -10,7 +10,7 @@ Tree binary_span_parser(const unsigned size, const std::vector<float> &weights)
     std::vector<float> cst_weights(size * size, 0.f);
     std::vector<unsigned> back_ptr(size * size);
 
-    // bottom-up constituency weight computation
+    // bottom-up constituency network computation
     for (unsigned length = 1 ; length < size ; ++length)
     {
         for (unsigned left = 0 ; left < size - length; ++ left)

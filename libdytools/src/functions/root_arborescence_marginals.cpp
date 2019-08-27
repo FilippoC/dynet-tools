@@ -36,7 +36,7 @@ dynet::Expression rooted_arborescence_marginals(dynet::ComputationGraph& cg, con
         auto e_vertices_mask = dynet::input(cg, dynet::Dim({n_max_vertices}, n_vertices->size()), v_mask_indices, v_mask_values);
         e_t_vertices_mask = dynet::transpose(e_vertices_mask);
 
-        // mask weight of invalid arcs
+        // mask network of invalid arcs
         exp_weights = dynet::cmult(exp_weights, e_vertices_mask);
         exp_weights = dynet::cmult(exp_weights, e_t_vertices_mask);
 
